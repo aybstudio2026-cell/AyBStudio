@@ -1,4 +1,5 @@
 import { FaYoutube, FaInstagram, FaTiktok } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
@@ -67,10 +68,10 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <nav>
             <ul className="flex flex-wrap gap-6 text-[11px] font-bold uppercase tracking-widest text-white/40">
-              <li><a href="#" className="hover:text-[#ffcc00] transition-colors">Inicio</a></li>
+              <li><Link to="/" className="hover:text-[#ffcc00] transition-colors">Inicio</Link></li>
               <li><a href="#" className="hover:text-[#ffcc00] transition-colors">Productos</a></li>
-              <li><a href="#" className="hover:text-[#ffcc00] transition-colors">Términos</a></li>
-              <li><a href="#" className="hover:text-[#ffcc00] transition-colors">Privacidad</a></li>
+              <li><Link to="/terminos" className="hover:text-[#ffcc00] transition-colors">Términos</Link></li>
+              <li><Link to="/privacidad" className="hover:text-[#ffcc00] transition-colors">Privacidad</Link></li>
             </ul>
           </nav>
 

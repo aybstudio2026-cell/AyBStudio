@@ -1,10 +1,17 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiTrash2, FiShoppingBag, FiArrowRight, FiInbox } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext'; 
 
 export default function CartSidebar({ isOpen, onClose }) {
   // Extraemos los datos reales del Contexto
   const { cart, removeFromCart, cartTotal } = useCart();
+  const navigate = useNavigate();
+
+  const handleContinue = () => {
+    onClose(); // Cerramos el sidebar
+    navigate('/checkout'); // Navegamos a la vista detallada
+  };
 
   return (
     <AnimatePresence>
@@ -88,10 +95,10 @@ export default function CartSidebar({ isOpen, onClose }) {
               
               <button 
                 disabled={cart.length === 0}
-                className="w-full bg-digital-lavender text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-digital-lavender/20 disabled:opacity-50 disabled:grayscale disabled:hover:scale-100"
-                onClick={() => console.log("Iniciando checkout con Lemon Squeezy...")}
+                onClick={handleContinue}
+                className="w-full bg-digital-lavender text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all shadow-lg"
               >
-                Continuar Compra
+                Continuar al Pago
                 <FiArrowRight />
               </button>
               
