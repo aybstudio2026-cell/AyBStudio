@@ -37,8 +37,8 @@ export default async function handler(req, res) {
 
   try {
     const { metadata, payment_id, total_amount, customer } = event.data;
-    const userId = metadata?.user_id;
-    const cart = JSON.parse(metadata?.cart || '[]');
+    const userId = metadata?.uid; 
+    const cart = JSON.parse(metadata?.c || '[]'); 
 
     if (!userId || cart.length === 0) {
       return res.status(400).json({ error: 'Missing user_id or cart in metadata' });
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
     const orderItems = cart.map((item) => ({
       order_id: order.id,
       product_id: item.id,
-      quantity: item.quantity,
+      quantity: item.qty, 
       price_at_purchase: item.price,
     }));
 

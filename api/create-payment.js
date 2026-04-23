@@ -14,11 +14,20 @@ export default async function handler(req, res) {
   try {
     const { cart, customerEmail, userId } = req.body;
 
-    // Construimos los items para Dodo usando dodo_product_id
     const productCart = cart.map((item) => ({
       product_id: item.dodo_product_id,
       quantity: item.quantity,
     }));
+
+    // Solo enviamos los datos mínimos en metadata
+    const cartMini = cart.map((item) => ({
+      id: item.id,
+      qty: item.quantity,
+      price: item.price,
+    }));
+
+    // Convertimos a string y verificamos que no exceda 500 chars
+    const cartString = JSON.stringify(cartMini);
 
     const payment = await client.payments.create({
       billing: {
@@ -35,8 +44,8 @@ export default async function handler(req, res) {
       },
       product_cart: productCart,
       metadata: {
-        user_id: userId,
-        cart: JSON.stringify(cart),
+        uid: userId,
+        c: cartString,
       },
       payment_link: true,
       return_url: `${process.env.APP_URL}/success`,
