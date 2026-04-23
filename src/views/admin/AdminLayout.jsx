@@ -9,9 +9,9 @@ import {
 
 const navItems = [
   { path: '/admin', label: 'Dashboard', icon: FiGrid, exact: true },
+  { path: '/admin/usuarios', label: 'Usuarios', icon: FiUsers },
   { path: '/admin/productos', label: 'Productos', icon: FiPackage },
   { path: '/admin/noticias', label: 'Noticias', icon: FiRadio },
-  { path: '/admin/usuarios', label: 'Usuarios', icon: FiUsers },
   { path: '/admin/ordenes', label: 'Órdenes', icon: FiShoppingBag },
 ];
 
