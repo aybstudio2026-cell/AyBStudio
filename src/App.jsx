@@ -13,6 +13,10 @@ import DownloadsView from './views/DownloadsView';
 import SuccessView from './views/SuccessView';
 import AdminLayout from './views/admin/AdminLayout';
 import AdminDashboard from './views/admin/AdminDashboard';
+import AdminProducts from './views/admin/AdminProducts';
+import AdminNews from './views/admin/AdminNews';
+import AdminUsers from './views/admin/AdminUsers';
+import AdminOrders from './views/admin/AdminOrders';
 
 function AppContent() {
   const location = useLocation();
@@ -38,6 +42,10 @@ function AppContent() {
           {/* Admin */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
+            <Route path="productos" element={<AdminProducts />} />
+            <Route path="noticias" element={<AdminNews />} />
+            <Route path="usuarios" element={<AdminUsers />} />
+            <Route path="ordenes" element={<AdminOrders />} />
           </Route>
         </Routes>
       </main>
