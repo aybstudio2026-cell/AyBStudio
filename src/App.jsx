@@ -10,6 +10,7 @@ import PrivacyView from './views/PrivacyView';
 import CheckoutView from './views/CheckoutView';
 import StoreView from './views/StoreView';
 import DownloadsView from './views/DownloadsView';
+import SuccessView from './views/SuccessView';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="/privacidad" element={<PrivacyView />} />
             <Route path="/tienda" element={<StoreView />} />
             <Route path="/descargas" element={<DownloadsView />} />
+            <Route path="/success" element={<SuccessView />} />
           </Routes>
         </main>
         <Footer />
