@@ -22,6 +22,7 @@ export default async function handler(req, res) {
     const { metadata, payment_id, total_amount } = event.data;
     const userId = metadata?.uid;
     const cart = JSON.parse(metadata?.c || '[]');
+    const totalUSD = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
     if (!userId || cart.length === 0) {
       return res.status(400).json({ error: 'Missing data in metadata' });
@@ -43,7 +44,7 @@ export default async function handler(req, res) {
       .from('orders')
       .insert({
         user_id: userId,
-        total_amount: total_amount / 100,
+        total_amount: totalUSD,
         status: 'completed',
         dodo_payment_id: payment_id,
       })
