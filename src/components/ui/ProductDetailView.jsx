@@ -5,6 +5,7 @@ import { FiArrowLeft, FiShoppingBag, FiCheckCircle, FiInfo } from 'react-icons/f
 import { motion } from 'framer-motion';
 import { supabase } from '../../supabaseClient';
 import { useCart } from '../../context/CartContext';
+import ProductReviews from './ProductReviews';
 
 export default function ProductDetailView() {
   const { id } = useParams();
@@ -127,6 +128,9 @@ export default function ProductDetailView() {
             </p>
           </motion.div>
 
+        </div>
+        <div className="max-w-7xl mx-auto px-6 mt-20">
+          <ProductReviews productId={product.id} />
         </div>
       </div>
     </div>

@@ -17,6 +17,8 @@ import AdminProducts from './views/admin/AdminProducts';
 import AdminNews from './views/admin/AdminNews';
 import AdminUsers from './views/admin/AdminUsers';
 import AdminOrders from './views/admin/AdminOrders';
+import WishlistView from './views/WishlistView';
+import AdminReviews from './views/admin/AdminReviews';
 
 function AppContent() {
   const location = useLocation();
@@ -38,6 +40,7 @@ function AppContent() {
           <Route path="/tienda" element={<StoreView />} />
           <Route path="/descargas" element={<DownloadsView />} />
           <Route path="/success" element={<SuccessView />} />
+          <Route path="/favoritos" element={<WishlistView />} />
 
           {/* Admin */}
           <Route path="/admin" element={<AdminLayout />}>
@@ -46,6 +49,7 @@ function AppContent() {
             <Route path="noticias" element={<AdminNews />} />
             <Route path="usuarios" element={<AdminUsers />} />
             <Route path="ordenes" element={<AdminOrders />} />
+            <Route path="reseñas" element={<AdminReviews />} />
           </Route>
         </Routes>
       </main>

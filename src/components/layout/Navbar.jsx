@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiSearch, FiShoppingBag, FiUser, FiX, FiLogOut, FiSettings, FiDownload } from 'react-icons/fi';
+import { FiSearch, FiShoppingBag, FiUser, FiX, FiLogOut, FiSettings, FiDownload, FiHeart } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from "../../supabaseClient";
@@ -12,7 +12,7 @@ export default function Navbar() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]); // Estado para los resultados
+  const [searchResults, setSearchResults] = useState([]);
   const [profile, setProfile] = useState(null);
   const [user, setUser] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -204,6 +204,12 @@ export default function Navbar() {
                       </Link>
                       <Link to="/pedidos" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-panda-black/60 hover:bg-soft-snow hover:text-digital-lavender transition-all">
                         <FiShoppingBag /> Mis Pedidos
+                      </Link>
+                      <Link 
+                        to="/favoritos" 
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-panda-black hover:bg-soft-snow transition-colors"
+                      >
+                        <FiHeart className="text-digital-lavender" /> Mis Favoritos
                       </Link>
                       <Link 
                         to="/descargas"
