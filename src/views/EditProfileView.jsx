@@ -55,29 +55,44 @@ export default function EditProfileView() {
     getInitialData();
   }, [navigate]);
 
-  // Función para subir Avatar
+  // Función para subir la imagen de perfil
   async function uploadAvatar(event) {
     try {
       setUploading(true);
+
       if (!event.target.files || event.target.files.length === 0) {
         throw new Error('Debes seleccionar una imagen.');
       }
+
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const filePath = `${user.id}.${fileExt}`;
+      const { data: oldFiles } = await supabase.storage
+        .from('avatars')
+        .list('', { search: user.id });
+
+      if (oldFiles && oldFiles.length > 0) {
+        const filesToRemove = oldFiles.map((f) => f.name);
+        await supabase.storage.from('avatars').remove(filesToRemove);
+      }
 
       let { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(filePath, file, { 
+          upsert: true,
+          cacheControl: '3600'
+        });
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
+      
+      const finalUrl = `${publicUrl}?t=${new Date().getTime()}`;
 
-      setProfile({ ...profile, avatar_url: publicUrl });
+      setProfile({ ...profile, avatar_url: finalUrl });
+            
     } catch (error) {
       alert(error.message);
     } finally {
@@ -99,9 +114,7 @@ export default function EditProfileView() {
     if (error) {
       alert("Error al actualizar");
     } else {
-      // SI TODO SALE BIEN, MOSTRAR TOAST
       setShowToast(true);
-      // DESAPARECER DESPUÉS DE 5 SEGUNDOS
       setTimeout(() => setShowToast(false), 5000);
     }
     setUpdating(false);
@@ -110,13 +123,12 @@ export default function EditProfileView() {
 
   return (
     <div className="pt-32 pb-20 min-h-screen bg-studio-bg flex justify-center items-start">
-      {/* Contenedor Principal en Dos Columnas */}
-      <div className="w-full max-w-7xl px-6 flex flex-col md:flex-row gap-10">
+      <div className="w-full max-w-7xl px-6 md:px-10 flex flex-col md:flex-row gap-10 items-start">
         
-        {/* --- SIDEBAR IZQUIERDO --- */}
+        {/* --- SIDEBAR--- */}
         <UserSidebar />
 
-        {/* --- CONTENIDO PRINCIPAL (Derecha) --- */}
+        {/* --- CONTENIDO PRINCIPAL --- */}
         <main className="flex-1 bg-studio-surface rounded-xl p-8 md:p-10 border border-studio-border shadow-flat">
           
           <div className="mb-10 border-b border-studio-border pb-8">
@@ -225,46 +237,42 @@ export default function EditProfileView() {
           </form>
         </main>
       </div>
-      {/* --- EL COMPONENTE TOAST MINIMALISTA (Superior Derecho) --- */}
-<AnimatePresence>
-  {showToast && (
-    <motion.div
-      initial={{ opacity: 0, y: -20, x: 20 }}
-      animate={{ opacity: 1, y: 0, x: 0 }}
-      exit={{ opacity: 0, x: 20, transition: { duration: 0.2 } }}
-      // Ahora es blanco, con un borde sutil y una barra lateral de color
-      className="fixed top-24 right-6 z-[200] w-full max-w-[300px] bg-white rounded-xl shadow-2xl border border-gray-100 flex items-center overflow-hidden"
-    >
-      {/* Barra lateral de color para indicar éxito sin saturar */}
-      <div className="w-1.5 h-16 bg-studio-primary shrink-0" />
+      
+      {/* Toast */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: 20 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, x: 20, transition: { duration: 0.2 } }}
+            className="fixed top-24 right-6 z-[200] w-full max-w-[300px] bg-white rounded-xl shadow-2xl border border-gray-100 flex items-center overflow-hidden"
+          >
+            <div className="w-1.5 h-16 bg-studio-primary shrink-0" />
 
-      <div className="flex items-center gap-3 p-4 flex-1">
-        {/* Icono en un círculo suave */}
-        <div className="bg-studio-primary/10 p-2 rounded-full shrink-0 text-studio-primary">
-          <FiCheck size={18} />
-        </div>
+            <div className="flex items-center gap-3 p-4 flex-1">
+              <div className="bg-studio-primary/10 p-2 rounded-full shrink-0 text-studio-primary">
+                <FiCheck size={18} />
+              </div>
 
-        {/* Texto con colores de tu paleta Slate */}
-        <div className="flex-1 pr-4">
-          <p className="font-bold text-studio-text-title text-sm leading-tight">
-            Cambios guardados
-          </p>
-          <p className="text-[10px] font-bold text-studio-secondary uppercase tracking-wider mt-0.5">
-            Perfil actualizado
-          </p>
-        </div>
-      </div>
+              <div className="flex-1 pr-4">
+                <p className="font-bold text-studio-text-title text-sm leading-tight">
+                  Cambios guardados
+                </p>
+                <p className="text-[10px] font-bold text-studio-secondary uppercase tracking-wider mt-0.5">
+                  Perfil actualizado
+                </p>
+              </div>
+            </div>
 
-      {/* Botón de cerrar (X) en gris para que no compita */}
-      <button 
-        onClick={() => setShowToast(false)}
-        className="absolute top-2 right-2 p-1 hover:bg-studio-bg rounded-md transition-colors text-studio-secondary/40 hover:text-studio-secondary"
-      >
-        <FiX size={14} />
-      </button>
-    </motion.div>
-  )}
-</AnimatePresence>
+            <button 
+              onClick={() => setShowToast(false)}
+              className="absolute top-2 right-2 p-1 hover:bg-studio-bg rounded-md transition-colors text-studio-secondary/40 hover:text-studio-secondary"
+            >
+              <FiX size={14} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
