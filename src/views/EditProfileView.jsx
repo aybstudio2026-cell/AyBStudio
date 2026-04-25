@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef} from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiUser, FiMail, FiCalendar, FiCheck, FiArrowLeft, FiEdit3, FiCamera } from 'react-icons/fi';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { 
+  FiUser, FiMail, FiCalendar, FiCheck, FiEdit3, 
+  FiCamera, FiShoppingBag, FiHeart, FiDownload, FiLock, FiX
+} from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabaseClient';
+import UserSidebar from '../components/layout/UserSidebar';
 
 export default function EditProfileView() {
   const navigate = useNavigate();
@@ -10,6 +15,7 @@ export default function EditProfileView() {
   const [updating, setUpdating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [user, setUser] = useState(null);
+  const [showToast, setShowToast] = useState(false);
   
   const [profile, setProfile] = useState({
     username: '',
@@ -18,42 +24,16 @@ export default function EditProfileView() {
     avatar_url: ''
   });
 
-  // FUNCIÓN PARA SUBIR LA FOTO
-  async function uploadAvatar(event) {
-    try {
-      setUploading(true);
+  // Configuración de los links del Sidebar
+  const sidebarLinks = [
+    { to: "/cuenta", label: "Mi Cuenta", icon: FiUser },
+    { to: "/pedidos", label: "Mis Pedidos", icon: FiShoppingBag },
+    { to: "/favoritos", label: "Favoritos", icon: FiHeart },
+    { to: "/descargas", label: "Descargas", icon: FiDownload },
+    { to: "/seguridad", label: "Seguridad", icon: FiLock },
+  ];
 
-      if (!event.target.files || event.target.files.length === 0) {
-        throw new Error('Debes seleccionar una imagen.');
-      }
-
-      const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      // 1. Subir imagen al bucket 'avatars'
-      let { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // 2. Obtener la URL pública
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // 3. Actualizar estado local (para ver la preview)
-      setProfile({ ...profile, avatar_url: publicUrl });
-            
-    } catch (error) {
-      alert(error.message);
-    } finally {
-      setUploading(false);
-    }
-  }
-
+  // Lógica de Autenticación y Carga de Datos
   useEffect(() => {
     async function getInitialData() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -75,6 +55,37 @@ export default function EditProfileView() {
     getInitialData();
   }, [navigate]);
 
+  // Función para subir Avatar
+  async function uploadAvatar(event) {
+    try {
+      setUploading(true);
+      if (!event.target.files || event.target.files.length === 0) {
+        throw new Error('Debes seleccionar una imagen.');
+      }
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      let { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setProfile({ ...profile, avatar_url: publicUrl });
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  // Función para guardar cambios
   async function handleUpdate(e) {
     e.preventDefault();
     setUpdating(true);
@@ -84,142 +95,176 @@ export default function EditProfileView() {
       ...profile,
       updated_at: new Date(),
     });
+
+    if (error) {
+      alert("Error al actualizar");
+    } else {
+      // SI TODO SALE BIEN, MOSTRAR TOAST
+      setShowToast(true);
+      // DESAPARECER DESPUÉS DE 5 SEGUNDOS
+      setTimeout(() => setShowToast(false), 5000);
+    }
     setUpdating(false);
   }
 
-  if (loading) return (
-    <div className="h-screen flex items-center justify-center font-black text-digital-lavender tracking-widest animate-pulse">
-      CARGANDO SISTEMA...
-    </div>
-  );
 
   return (
-    <div className="pt-32 pb-20 min-h-screen bg-soft-snow flex justify-center items-start">
-      <div className="w-full max-w-7xl px-6">
-    
-        <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-xl shadow-panda-black/5 border border-white">
-          <div className="mb-12">
-            <h1 className="text-3xl font-black text-panda-black uppercase tracking-tighter flex items-center gap-3">
-              <div className="p-3 bg-digital-lavender/10 rounded-2xl">
-                <FiEdit3 className="text-digital-lavender" size={24} />
+    <div className="pt-32 pb-20 min-h-screen bg-studio-bg flex justify-center items-start">
+      {/* Contenedor Principal en Dos Columnas */}
+      <div className="w-full max-w-7xl px-6 flex flex-col md:flex-row gap-10">
+        
+        {/* --- SIDEBAR IZQUIERDO --- */}
+        <UserSidebar />
+
+        {/* --- CONTENIDO PRINCIPAL (Derecha) --- */}
+        <main className="flex-1 bg-studio-surface rounded-xl p-8 md:p-10 border border-studio-border shadow-flat">
+          
+          <div className="mb-10 border-b border-studio-border pb-8">
+            <h1 className="text-2xl font-bold text-studio-text-title uppercase tracking-tight flex items-center gap-3">
+              <div className="p-2.5 bg-studio-primary/10 rounded-lg text-studio-primary">
+                <FiEdit3 size={20} />
               </div>
-              Mis Datos
+              Configuración de Perfil
             </h1>
-            <p className="text-[10px] font-bold text-panda-black/30 uppercase tracking-[0.2em] mt-2 ml-16">
-              Gestiona tu identidad de comprador en A&B Studio
+            <p className="text-[11px] font-bold text-studio-text-body uppercase tracking-widest mt-3 ml-12">
+              Gestiona tus datos personales y avatar
             </p>
           </div>
 
-          <form onSubmit={handleUpdate} className="space-y-8">
+          <form onSubmit={handleUpdate} className="space-y-10">
 
-            <div className="flex flex-col items-center gap-6 pb-12 border-b border-gray-50">
+            {/* Sección Avatar */}
+            <div className="flex flex-col md:flex-row items-center gap-8 pb-10 border-b border-studio-border">
               <div className="relative group">
-                <div className="w-32 h-32 rounded-[2.5rem] bg-digital-lavender flex items-center justify-center text-white text-5xl font-black shadow-inner overflow-hidden border-4 border-white transition-transform group-hover:scale-105">
+                <div className="w-32 h-32 rounded-xl bg-studio-bg border-2 border-studio-border flex items-center justify-center text-studio-primary text-4xl font-black overflow-hidden transition-all group-hover:border-studio-primary/50">
                   {profile.avatar_url ? (
                     <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
                   ) : (
-                    profile.full_name?.[0] || '?'
+                    <div className="uppercase">{profile.full_name?.[0] || '?'}</div>
                   )}
-                  
-                  {/* Overlay de carga */}
                   {uploading && (
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-studio-text-title/60 flex items-center justify-center">
                       <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     </div>
                   )}
                 </div>
-
-                {/* Input de archivo oculto */}
-                <input 
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={uploadAvatar}
-                  accept="image/*"
-                  className="hidden"
-                />
-
+                <input type="file" ref={fileInputRef} onChange={uploadAvatar} accept="image/*" className="hidden" />
                 <button 
-                  type="button"
+                  type="button" 
                   onClick={() => fileInputRef.current.click()}
-                  className="absolute -bottom-2 -right-2 bg-panda-black p-3 rounded-2xl shadow-lg text-white hover:bg-digital-lavender transition-all"
+                  className="absolute -bottom-2 -right-2 bg-studio-primary p-2.5 rounded-lg shadow-sm text-white hover:opacity-90 transition-all"
                 >
-                  <FiCamera size={18} />
+                  <FiCamera size={16} />
                 </button>
               </div>
-              <div className="text-center">
-                <p className="text-[10px] font-black text-panda-black/20 uppercase tracking-[0.3em]">Foto de Perfil</p>
-                <p className="text-xs text-panda-black/40 mt-1 font-medium">PNG, JPG o GIF. Max 2MB.</p>
+              <div className="text-center md:text-left">
+                <h4 className="text-sm font-bold text-studio-text-title">Foto de Perfil</h4>
+                <p className="text-xs text-studio-text-body mt-1">Recomendado: Cuadrado, PNG o JPG (Máx 2MB).</p>
               </div>
             </div>
             
-            {/* Grid de dos columnas para campos principales */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              
-              {/* Campo: Nombre de Usuario */}
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-panda-black/40 uppercase tracking-widest ml-2">Username</label>
+            {/* Grid de Formulario */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+              <div className="space-y-2.5">
+                <label className="text-[11px] font-bold text-studio-text-body uppercase tracking-[0.15em] ml-1">Username</label>
                 <div className="relative">
-                  <FiUser className="absolute left-5 top-1/2 -translate-y-1/2 text-digital-lavender" />
+                  <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-secondary" />
                   <input 
-                    type="text" required placeholder="pandin_01"
+                    type="text" required
                     value={profile.username || ''}
                     onChange={(e) => setProfile({...profile, username: e.target.value})}
-                    className="w-full pl-14 pr-6 py-4 bg-soft-snow rounded-2xl outline-none focus:bg-white border-2 border-transparent focus:border-digital-lavender/20 transition-all font-bold text-sm shadow-sm"
+                    className="w-full pl-12 pr-4 py-3 bg-studio-bg border border-transparent rounded-lg outline-none focus:border-studio-primary focus:bg-studio-surface transition-all font-bold text-sm text-studio-text-title"
                   />
                 </div>
               </div>
 
-              {/* Campo: Nombre Completo */}
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-panda-black/40 uppercase tracking-widest ml-2">Nombre Real</label>
+              <div className="space-y-2.5">
+                <label className="text-[11px] font-bold text-studio-text-body uppercase tracking-[0.15em] ml-1">Nombre Completo</label>
                 <input 
-                  type="text" placeholder="Tu nombre completo"
+                  type="text"
                   value={profile.full_name || ''}
                   onChange={(e) => setProfile({...profile, full_name: e.target.value})}
-                  className="w-full px-6 py-4 bg-soft-snow rounded-2xl outline-none focus:bg-white border-2 border-transparent focus:border-digital-lavender/20 transition-all font-bold text-sm shadow-sm"
+                  className="w-full px-4 py-3 bg-studio-bg border border-transparent rounded-lg outline-none focus:border-studio-primary focus:bg-studio-surface transition-all font-bold text-sm text-studio-text-title"
                 />
               </div>
 
-              {/* Campo: Email (Solo lectura) */}
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-panda-black/40 uppercase tracking-widest ml-2">Correo de contacto</label>
-                <div className="relative opacity-60">
-                  <FiMail className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div className="space-y-2.5">
+                <label className="text-[11px] font-bold text-studio-text-body uppercase tracking-[0.15em] ml-1">Email (Protegido)</label>
+                <div className="relative group">
+                  <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-secondary/40" />
                   <input 
                     type="email" readOnly value={user?.email || ''}
-                    className="w-full pl-14 pr-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-sm cursor-not-allowed"
+                    className="w-full pl-12 pr-4 py-3 bg-studio-bg/50 border border-studio-border rounded-lg font-bold text-sm text-studio-text-body/60 cursor-not-allowed"
                   />
                 </div>
               </div>
 
-              {/* Campo: Fecha de Nacimiento */}
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-panda-black/40 uppercase tracking-widest ml-2">Fecha de Nacimiento</label>
+              <div className="space-y-2.5">
+                <label className="text-[11px] font-bold text-studio-text-body uppercase tracking-[0.15em] ml-1">Cumpleaños</label>
                 <div className="relative">
-                  <FiCalendar className="absolute left-5 top-1/2 -translate-y-1/2 text-digital-lavender" />
+                  <FiCalendar className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-secondary" />
                   <input 
                     type="date"
                     value={profile.birthday || ''}
                     onChange={(e) => setProfile({...profile, birthday: e.target.value})}
-                    className="w-full pl-14 pr-6 py-4 bg-soft-snow rounded-2xl outline-none focus:bg-white border-2 border-transparent focus:border-digital-lavender/20 transition-all font-bold text-sm shadow-sm"
+                    className="w-full pl-12 pr-4 py-3 bg-studio-bg border border-transparent rounded-lg outline-none focus:border-studio-primary focus:bg-studio-surface transition-all font-bold text-sm text-studio-text-title"
                   />
                 </div>
               </div>
-
             </div>
 
-            <div className="pt-6 border-t border-gray-50 flex flex-col md:flex-row items-center justify-between gap-6">
-              <p></p>
+            {/* Footer de formulario */}
+            <div className="pt-10 flex items-center justify-end border-t border-studio-border">
               <button 
                 type="submit" disabled={updating}
-                className="w-full md:w-auto px-12 bg-panda-black text-white font-black py-5 rounded-[2rem] flex items-center justify-center gap-3 hover:bg-digital-lavender transition-all shadow-xl shadow-panda-black/10 active:scale-[0.98] disabled:opacity-50"
+                className="w-full md:w-auto px-10 bg-studio-primary text-white font-bold py-4 rounded-lg flex items-center justify-center gap-3 hover:opacity-90 transition-all shadow-sm active:scale-[0.98] disabled:opacity-50"
               >
-                {updating ? 'Sincronizando...' : <><FiCheck size={20} /> Guardar Cambios</>}
+                {updating ? 'Guardando...' : <><FiCheck size={18} /> Guardar Cambios</>}
               </button>
             </div>
           </form>
+        </main>
+      </div>
+      {/* --- EL COMPONENTE TOAST MINIMALISTA (Superior Derecho) --- */}
+<AnimatePresence>
+  {showToast && (
+    <motion.div
+      initial={{ opacity: 0, y: -20, x: 20 }}
+      animate={{ opacity: 1, y: 0, x: 0 }}
+      exit={{ opacity: 0, x: 20, transition: { duration: 0.2 } }}
+      // Ahora es blanco, con un borde sutil y una barra lateral de color
+      className="fixed top-24 right-6 z-[200] w-full max-w-[300px] bg-white rounded-xl shadow-2xl border border-gray-100 flex items-center overflow-hidden"
+    >
+      {/* Barra lateral de color para indicar éxito sin saturar */}
+      <div className="w-1.5 h-16 bg-studio-primary shrink-0" />
+
+      <div className="flex items-center gap-3 p-4 flex-1">
+        {/* Icono en un círculo suave */}
+        <div className="bg-studio-primary/10 p-2 rounded-full shrink-0 text-studio-primary">
+          <FiCheck size={18} />
+        </div>
+
+        {/* Texto con colores de tu paleta Slate */}
+        <div className="flex-1 pr-4">
+          <p className="font-bold text-studio-text-title text-sm leading-tight">
+            Cambios guardados
+          </p>
+          <p className="text-[10px] font-bold text-studio-secondary uppercase tracking-wider mt-0.5">
+            Perfil actualizado
+          </p>
         </div>
       </div>
+
+      {/* Botón de cerrar (X) en gris para que no compita */}
+      <button 
+        onClick={() => setShowToast(false)}
+        className="absolute top-2 right-2 p-1 hover:bg-studio-bg rounded-md transition-colors text-studio-secondary/40 hover:text-studio-secondary"
+      >
+        <FiX size={14} />
+      </button>
+    </motion.div>
+  )}
+</AnimatePresence>
     </div>
   );
 }

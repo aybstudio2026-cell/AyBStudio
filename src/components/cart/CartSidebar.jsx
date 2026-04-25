@@ -1,82 +1,111 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiX, FiTrash2, FiShoppingBag, FiArrowRight, FiInbox } from 'react-icons/fi';
+import { FiX, FiTrash2, FiShoppingCart, FiArrowRight, FiInbox, FiMinus, FiPlus } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext'; 
 
 export default function CartSidebar({ isOpen, onClose }) {
-  // Extraemos los datos reales del Contexto
-  const { cart, removeFromCart, cartTotal } = useCart();
+  // Extraemos las funciones y datos del contexto global
+  const { cart, removeFromCart, updateQuantity, cartTotal } = useCart();
   const navigate = useNavigate();
 
   const handleContinue = () => {
-    onClose(); // Cerramos el sidebar
-    navigate('/checkout'); // Navegamos a la vista detallada
+    onClose(); // Cerrar el sidebar antes de navegar
+    navigate('/checkout'); 
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Overlay */}
+          {/* Capa de fondo (Overlay) con desenfoque suave */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-panda-black/20 backdrop-blur-sm z-[100] cursor-pointer"
+            className="fixed inset-0 bg-studio-text-title/40 backdrop-blur-sm z-[100] cursor-pointer"
           />
 
-          {/* Sidebar */}
+          {/* Panel del Carrito (Sidebar) */}
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-full max-w-[400px] bg-white shadow-2xl z-[101] flex flex-col"
+            className="fixed right-0 top-0 h-full w-full max-w-[400px] bg-studio-surface shadow-flat z-[101] flex flex-col border-l border-studio-border"
           >
-            {/* Cabecera */}
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            {/* Cabecera del Carrito */}
+            <div className="p-6 border-b border-studio-border flex justify-between items-center bg-studio-surface">
               <div className="flex items-center gap-3">
-                <FiShoppingBag className="text-digital-lavender" size={20} />
-                <h2 className="text-xl font-black text-panda-black uppercase tracking-tighter">Tu Carrito</h2>
+                <FiShoppingCart className="text-studio-primary" size={22} />
+                <h2 className="text-xl font-bold text-studio-text-title uppercase tracking-tight">Tu Carrito</h2>
               </div>
-              <button onClick={onClose} className="p-2 hover:bg-soft-snow rounded-full transition-colors text-gray-400">
+              <button 
+                onClick={onClose} 
+                className="p-2 hover:bg-studio-bg rounded-lg transition-colors text-studio-secondary"
+              >
                 <FiX size={24} />
               </button>
             </div>
 
-            {/* Lista de Productos Reales */}
+            {/* Cuerpo: Lista de Productos */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {cart.length === 0 ? (
-                /* Estado Vacío */
-                <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-30">
-                  <FiInbox size={48} />
-                  <p className="font-black uppercase tracking-widest text-xs">Tu carrito está vacío</p>
+                /* Estado cuando el carrito está vacío */
+                <div className="h-full flex flex-col items-center justify-center text-center space-y-4 text-studio-secondary opacity-40">
+                  <FiInbox size={48} strokeWidth={1.5} />
+                  <p className="font-bold uppercase tracking-widest text-xs">Tu carrito está vacío</p>
                 </div>
               ) : (
-                /* Mapeo de productos del contexto */
+                /* Mapeo de productos en el carrito */
                 cart.map((item) => (
                   <div key={item.id} className="flex gap-4 items-center group">
-                    <img 
-                      src={item.image_url} 
-                      className="w-16 h-16 rounded-xl object-cover border border-gray-100 bg-soft-snow" 
-                      alt={item.name}
-                    />
-                    <div className="flex-1">
-                      <h4 className="font-bold text-panda-black text-sm line-clamp-1">{item.name}</h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] font-black px-2 py-0.5 bg-soft-snow rounded text-panda-black/40">
-                          x{item.quantity}
-                        </span>
-                        <p className="text-digital-lavender font-black text-sm">
+                    {/* Imagen del Producto */}
+                    <div className="shrink-0">
+                      <img 
+                        src={item.image_url} 
+                        className="w-20 h-20 rounded-xl object-cover border border-studio-border bg-studio-bg" 
+                        alt={item.name}
+                      />
+                    </div>
+
+                    {/* Información y Controles */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-studio-text-title text-sm line-clamp-1">{item.name}</h4>
+                      
+                      <div className="flex items-center gap-3 mt-2">
+                        {/* Selector de Cantidad Estilo Flat */}
+                        <div className="flex items-center border border-studio-border rounded-lg bg-studio-bg overflow-hidden">
+                          <button 
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="p-1.5 hover:bg-studio-border text-studio-text-body transition-colors"
+                          >
+                            <FiMinus size={14} />
+                          </button>
+                          
+                          <span className="px-3 text-xs font-bold text-studio-text-title min-w-[30px] text-center">
+                            {item.quantity}
+                          </span>
+                          
+                          <button 
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="p-1.5 hover:bg-studio-border text-studio-text-body transition-colors"
+                          >
+                            <FiPlus size={14} />
+                          </button>
+                        </div>
+
+                        {/* Precio calculado */}
+                        <p className="text-studio-primary font-black text-sm">
                           ${(item.price * item.quantity).toFixed(2)}
                         </p>
                       </div>
                     </div>
-                    {/* Botón de eliminar funcional */}
+                    
+                    {/* Botón Eliminar */}
                     <button 
                       onClick={() => removeFromCart(item.id)}
-                      className="p-2 text-gray-300 hover:text-red-400 hover:bg-red-50 rounded-lg transition-all"
+                      className="p-2.5 text-studio-secondary hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                       title="Eliminar producto"
                     >
                       <FiTrash2 size={18} />
@@ -86,25 +115,29 @@ export default function CartSidebar({ isOpen, onClose }) {
               )}
             </div>
 
-            {/* Footer del Carrito Dinámico */}
-            <div className="p-6 bg-soft-snow border-t border-gray-100 space-y-4">
-              <div className="flex justify-between items-center text-panda-black">
-                <span className="font-bold opacity-50 uppercase text-xs tracking-widest">Subtotal</span>
-                <span className="text-2xl font-black">${cartTotal.toFixed(2)}</span>
+            {/* Footer: Totales y Checkout */}
+            <div className="p-8 bg-studio-bg border-t border-studio-border space-y-6">
+              <div className="flex justify-between items-end">
+                <div className="flex flex-col gap-1">
+                  <span className="font-bold text-studio-secondary uppercase text-[10px] tracking-widest">Subtotal Estimado</span>
+                  <span className="text-3xl font-black text-studio-text-title">${cartTotal.toFixed(2)}</span>
+                </div>
               </div>
               
-              <button 
-                disabled={cart.length === 0}
-                onClick={handleContinue}
-                className="w-full bg-digital-lavender text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all shadow-lg"
-              >
-                Continuar al Pago
-                <FiArrowRight />
-              </button>
-              
-              <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-tighter">
-                Impuestos calculados al finalizar la compra
-              </p>
+              <div className="space-y-3">
+                <button 
+                  disabled={cart.length === 0}
+                  onClick={handleContinue}
+                  className="w-full bg-studio-primary text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:opacity-90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Continuar al Pago
+                  <FiArrowRight size={20} />
+                </button>
+                
+                <p className="text-[10px] text-center text-studio-secondary font-bold uppercase tracking-widest">
+                  Acceso inmediato tras completar el pago
+                </p>
+              </div>
             </div>
           </motion.div>
         </>

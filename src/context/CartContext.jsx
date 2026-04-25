@@ -8,7 +8,6 @@ export function CartProvider({ children }) {
     return savedCart ? JSON.parse(savedCart) : [];
   });
 
-  // Guardar en localStorage cada vez que el carrito cambie
   useEffect(() => {
     localStorage.setItem('ab-studio-cart', JSON.stringify(cart));
   }, [cart]);
@@ -29,13 +28,25 @@ export function CartProvider({ children }) {
     setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
   };
 
+  const updateQuantity = (productId, newQuantity) => {
+  if (newQuantity < 1) return;
+  
+  setCart(prevCart => 
+    prevCart.map(item => 
+      item.id === productId 
+        ? { ...item, quantity: newQuantity } 
+        : item
+    )
+  );
+};
+
   const clearCart = () => setCart([]);
 
   const cartTotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, cartTotal, cartCount }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount }}>
       {children}
     </CartContext.Provider>
   );
