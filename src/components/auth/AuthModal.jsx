@@ -2,41 +2,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { FiX, FiMail, FiLock, FiUser} from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
-// 1. Importamos el cliente de Supabase
 import { supabase } from '../../supabaseClient';
 
 export default function AuthModal({ isOpen, onClose }) {
   const [isLogin, setIsLogin] = useState(true);
-  
-  // 2. Estados para el formulario
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // 3. Función principal de Autenticación (Email/Password)
   const handleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     if (isLogin) {
-      // LOGIN
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) alert(error.message);
-      else onClose(); // Cerramos si entra con éxito
+      else onClose();
     } else {
-      // REGISTRO
       const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: username, // Esto lo recibirá nuestro Trigger de Supabase
-          }
-        }
+        email, password,
+        options: { data: { full_name: username } }
       });
       if (error) alert(error.message);
       else alert('¡Revisa tu email para confirmar tu cuenta!');
@@ -44,11 +29,8 @@ export default function AuthModal({ isOpen, onClose }) {
     setLoading(false);
   };
 
-  // 4. Función para Social Logins
   const handleSocialLogin = async (provider) => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: provider,
-    });
+    const { error } = await supabase.auth.signInWithOAuth({ provider });
     if (error) alert(error.message);
   };
 
@@ -61,107 +43,101 @@ export default function AuthModal({ isOpen, onClose }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-panda-black/40 backdrop-blur-sm z-[100] cursor-pointer"
+            className="fixed inset-0 bg-studio-text-title/40 backdrop-blur-sm z-[100] cursor-pointer"
           />
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed inset-0 m-auto w-full max-w-[420px] h-fit bg-white rounded-kawaii shadow-2xl z-[101] overflow-hidden border border-gray-100"
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            className="fixed inset-0 m-auto w-full max-w-[400px] h-fit bg-studio-surface rounded-xl shadow-flat z-[101] overflow-hidden border border-studio-border"
           >
-            <div className="p-6 pb-0 flex justify-between items-start">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-panda-black rounded-full flex items-center justify-center text-white font-bold text-[10px]">
-                  A&B
-                </div>
-                <span className="font-black text-panda-black tracking-tighter uppercase text-sm">Studio</span>
+            {/* Header del Modal */}
+            <div className="p-6 pb-0 flex justify-between items-center">
+              <div className="flex flex-col items-center leading-none">
+                <span className="text-2xl font-black text-studio-text-title tracking-tighter uppercase">
+                  A<span className="text-studio-primary">&</span>B
+                </span>
+                <span className="text-[9px] font-bold text-studio-text-title tracking-[0.3em] uppercase ml-1">
+                  Studio
+                </span>
               </div>
-              <button onClick={onClose} className="p-2 hover:bg-soft-snow rounded-full transition-colors text-gray-400">
+              
+              <button onClick={onClose} className="p-2 hover:bg-studio-bg rounded-lg transition-colors text-studio-secondary">
                 <FiX size={20} />
               </button>
             </div>
 
             <div className="p-8 space-y-6">
-              <div className="text-center space-y-2">
-                <h2 className="text-2xl font-black text-panda-black">
-                  {isLogin ? '¡Hola de nuevo!' : 'Crea tu cuenta'}
+              <div className="text-center space-y-1">
+                <h2 className="text-2xl font-bold text-studio-text-title">
+                  {isLogin ? 'Bienvenido' : 'Crea tu cuenta'}
                 </h2>
-                <p className="text-sm text-gray-400 font-medium">
-                  {isLogin ? 'Accede a tus descargas y licencias.' : 'Únete para guardar tus stickers y mascotas.'}
+                <p className="text-sm text-studio-text-body font-medium">
+                  {isLogin ? 'Accede a tus recursos digitales.' : 'Únete a nuestra comunidad creativa.'}
                 </p>
               </div>
 
-              {/* Botones de Social Login conectados */}
-              <div className="grid grid-cols-1 gap-4">
-                <button 
-                  onClick={() => handleSocialLogin('google')}
-                  className="flex items-center justify-center gap-2 py-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-all font-bold text-sm text-panda-black"
-                >
-                  <FcGoogle size={18} /> Google
-                </button>
-              </div>
+              <button
+                onClick={() => handleSocialLogin('google')}
+                className="w-full flex items-center justify-center gap-3 py-3 border border-studio-border rounded-lg hover:bg-studio-bg transition-all font-bold text-sm text-studio-text-title"
+              >
+                <FcGoogle size={20} /> Google
+              </button>
 
               <div className="relative flex items-center justify-center uppercase">
-                <div className="absolute w-full border-t border-gray-100"></div>
-                <span className="relative bg-white px-4 text-[10px] text-gray-300 font-bold tracking-widest">o con email</span>
+                <div className="absolute w-full border-t border-studio-border"></div>
+                <span className="relative bg-studio-surface px-4 text-[10px] text-studio-secondary font-bold tracking-widest">o con email</span>
               </div>
 
-              {/* Formulario conectado */}
               <form className="space-y-4" onSubmit={handleAuth}>
                 {!isLogin && (
                   <div className="relative">
-                    <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-secondary" />
                     <input 
-                      type="text" 
-                      required
-                      value={username}
+                      type="text" required value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="Nombre de usuario" 
-                      className="w-full pl-12 pr-4 py-4 bg-soft-snow rounded-2xl outline-none focus:ring-2 ring-digital-lavender/20 transition-all font-medium text-sm"
+                      placeholder="Nombre completo" 
+                      className="w-full pl-12 pr-4 py-3 bg-studio-bg border border-transparent rounded-lg outline-none focus:border-studio-primary focus:bg-studio-surface transition-all font-medium text-sm text-studio-text-title"
                     />
                   </div>
                 )}
                 <div className="relative">
-                  <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-secondary" />
                   <input 
-                    type="email" 
-                    required
-                    value={email}
+                    type="email" required value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Tu email" 
-                    className="w-full pl-12 pr-4 py-4 bg-soft-snow rounded-2xl outline-none focus:ring-2 ring-digital-lavender/20 transition-all font-medium text-sm"
+                    className="w-full pl-12 pr-4 py-3 bg-studio-bg border border-transparent rounded-lg outline-none focus:border-studio-primary focus:bg-studio-surface transition-all font-medium text-sm text-studio-text-title"
                   />
                 </div>
                 <div className="relative">
-                  <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-secondary" />
                   <input 
-                    type="password" 
-                    required
-                    value={password}
+                    type="password" required value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Contraseña" 
-                    className="w-full pl-12 pr-4 py-4 bg-soft-snow rounded-2xl outline-none focus:ring-2 ring-digital-lavender/20 transition-all font-medium text-sm"
+                    className="w-full pl-12 pr-4 py-3 bg-studio-bg border border-transparent rounded-lg outline-none focus:border-studio-primary focus:bg-studio-surface transition-all font-medium text-sm text-studio-text-title"
                   />
                 </div>
 
                 <button 
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-digital-lavender text-white font-bold py-4 rounded-2xl shadow-lg shadow-digital-lavender/20 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-studio-primary text-white font-bold py-3.5 rounded-lg shadow-sm hover:opacity-90 transition-all disabled:opacity-50"
                 >
                   {loading ? 'Procesando...' : (isLogin ? 'Iniciar Sesión' : 'Registrarse')}
                 </button>
               </form>
 
-              <p className="text-center text-sm font-bold text-gray-400">
-                {isLogin ? '¿No tienes cuenta? ' : '¿Ya eres miembro? '}
+              <p className="text-center text-sm font-bold text-studio-text-body">
+                {isLogin ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '}
                 <button 
                   type="button"
                   onClick={() => setIsLogin(!isLogin)}
-                  className="text-digital-lavender hover:underline"
+                  className="text-studio-primary hover:underline"
                 >
-                  {isLogin ? 'Regístrate aquí' : 'Inicia sesión'}
+                  {isLogin ? 'Crea una aquí' : 'Inicia sesión'}
                 </button>
               </p>
             </div>

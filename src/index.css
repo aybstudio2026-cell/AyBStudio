@@ -1,15 +1,51 @@
 @import "tailwindcss";
-
 @config "../tailwind.config.js";
 
+@theme {
+  /* Fondo y Superficies */
+  --color-studio-bg: #F8FAFC;        /* Slate-50 */
+  --color-studio-surface: #FFFFFF;   /* Blanco puro */
+  
+  /* Colores de Marca (Unisex) */
+  --color-studio-primary: #0D9488;   /* Teal-600 */
+  --color-studio-secondary: #64748B; /* Slate-500 */
+  --color-studio-accent: #F59E0B;    /* Amber-500 */
+
+  /* Texto */
+  --color-studio-text-title: #0F172A; /* Slate-900 */
+  --color-studio-text-body: #475569;  /* Slate-600 */
+  
+  /* Bordes para estilo Flat */
+  --color-studio-border: #E2E8F0;    /* Slate-200 */
+}
+
 :root {
-  background-color: #F8FAFC; /* soft-snow */
+  /* Usamos la variable definida arriba */
+  background-color: var(--color-studio-bg);
 }
 
 body {
   margin: 0;
-  place-items: initial; /* Para que no centre todo en medio de la pantalla */
+  place-items: initial;
   width: 100%;
   height: 100%;
   overflow-x: hidden;
+  /* Aplicamos el color de texto base y suavizado de fuente */
+  color: var(--color-studio-text-body);
+  font-family: sans-serif; /* O la que prefieras */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Capa base para consistencia en títulos */
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--color-studio-text-title);
+    font-weight: 700;
+  }
+  
+  /* Estilo base para enlaces */
+  a {
+    transition: color 0.2s ease;
+  }
 }

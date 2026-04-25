@@ -124,7 +124,7 @@ export default function ProductDetailView() {
             </div>
             
             <p className="text-[9px] text-center text-panda-black/20 font-bold uppercase tracking-widest">
-              Pagos procesados de forma segura por Lemon Squeezy
+              Pagos procesados de forma segura por Dodo Payments
             </p>
           </motion.div>
 

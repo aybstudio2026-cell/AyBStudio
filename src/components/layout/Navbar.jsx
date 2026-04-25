@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiSearch, FiShoppingBag, FiUser, FiX, FiLogOut, FiSettings, FiDownload, FiHeart } from 'react-icons/fi';
+import { FiSearch, FiShoppingCart, FiUser, FiX, FiLogOut, FiSettings, FiDownload, FiHeart } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from "../../supabaseClient";
@@ -20,14 +20,10 @@ export default function Navbar() {
   const { cartCount } = useCart();
   const navigate = useNavigate();
 
-  // 1. Lógica de Autenticación y Perfil
+  // Lógica de Autenticación y Perfil
   useEffect(() => {
     const getProfile = async (userId) => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('avatar_url, username')
-        .eq('id', userId)
-        .single();
+      const { data } = await supabase.from('profiles').select('avatar_url, username').eq('id', userId).single();
       setProfile(data);
     };
 
@@ -45,31 +41,26 @@ export default function Navbar() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // 2. FUNCIÓN DE BÚSQUEDA (Sin modificar la URL de la página)
+  // FUNCIÓN DE BÚSQUEDA
   const handleSearch = async (e) => {
     const value = e.target.value;
     setSearchQuery(value);
 
     if (value.trim().length > 1) {
-      // Buscamos en Supabase productos que coincidan
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name, price, image_url')
-        .ilike('name', `%${value}%`)
-        .limit(5); // Solo mostramos los 5 mejores resultados
-
+      const { data, error } = await supabase.from('products').select('id, name, price, image_url').ilike('name', `%${value}%`).limit(5);
       if (!error) setSearchResults(data);
     } else {
       setSearchResults([]);
     }
   };
 
+  // FUNCIÓN DE CERRAR SESIÓN
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setIsMenuOpen(false);
   };
 
-  // Cerrar menú al hacer clic fuera
+  // FUNCIÓN PARA CERRAR MENÚ AL HACER CLIC FUERA
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -82,21 +73,16 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 w-full z-50 bg-soft-snow/70 backdrop-blur-md border-b border-gray-200 h-20">
+      <nav className="fixed top-0 w-full z-50 bg-studio-surface border-b border-studio-border h-20">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           
           {/* --- LOGO --- */}
-          <Link to="/" className="flex items-center gap-3 group shrink-0">
-            <div className="relative">
-              <div className="absolute -top-1 -left-1 w-4 h-4 bg-panda-black rounded-full group-hover:-rotate-12 transition-transform"></div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-panda-black rounded-full group-hover:rotate-12 transition-transform"></div>
-              <div className="relative w-11 h-11 bg-panda-black rounded-full flex items-center justify-center border-2 border-white shadow-sm z-10">
-                <span className="text-white font-black text-xs tracking-tighter italic">A&B</span>
-              </div>
-            </div> 
-            <div className="flex flex-col -space-y-1">
-              <span className="font-black text-panda-black text-xl tracking-tighter uppercase">Studio</span>
-              <span className="text-[10px] font-bold text-digital-lavender tracking-[0.2em] uppercase">Digital Products</span>
+          <Link to="/" className="flex items-center gap-2 group shrink-0">
+            <div className="flex flex-col items-center leading-none">
+              <span className="text-4xl font-black text-studio-text-title tracking-tighter uppercase">
+                A<span className="text-studio-primary">&</span>B
+              </span>
+              <span className="text-xs font-bold text-studio-text-title tracking-[0.4em] uppercase ml-1">Studio</span>
             </div>
           </Link>
 
@@ -105,24 +91,25 @@ export default function Navbar() {
             <AnimatePresence>
               {isSearchOpen && (
                 <div className="w-full max-w-lg relative">
+                  {/* Contenedor del Input (Estilo Flat) */}
                   <motion.div 
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="flex items-center bg-white border border-gray-100 rounded-full px-5 py-2.5 shadow-sm"
+                    className="flex items-center bg-studio-surface border border-studio-border rounded-xl px-5 py-2.5 shadow-flat"
                   >
-                    <FiSearch className="text-digital-lavender mr-3 shrink-0" />
+                    <FiSearch className="text-studio-primary mr-3 shrink-0" />
                     <input 
                       autoFocus
                       type="text"
                       placeholder="Buscar apps, packs..."
                       value={searchQuery}
                       onChange={handleSearch}
-                      className="w-full bg-transparent outline-none font-medium text-panda-black placeholder:text-gray-300 text-sm"
+                      className="w-full bg-transparent outline-none font-bold text-studio-text-title placeholder:text-studio-secondary/40 text-sm"
                     />
                     <button 
                       onClick={() => { setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); }}
-                      className="p-1 hover:bg-soft-snow rounded-full transition-colors text-gray-400"
+                      className="p-1 hover:bg-studio-bg rounded-lg transition-colors text-studio-secondary"
                     >
                       <FiX size={18} />
                     </button>
@@ -135,19 +122,27 @@ export default function Navbar() {
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 5 }}
-                        className="absolute top-full left-0 w-full mt-2 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden py-2 z-50"
+                        className="absolute top-full left-0 w-full mt-2 bg-studio-surface rounded-xl shadow-flat border border-studio-border overflow-hidden py-2 z-50"
                       >
                         {searchResults.map(result => (
                           <Link
                             key={result.id}
                             to={`/producto/${result.id}`}
                             onClick={() => { setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); }}
-                            className="flex items-center gap-4 px-6 py-3 hover:bg-soft-snow transition-all group"
+                            className="flex items-center gap-4 px-6 py-3 hover:bg-studio-primary/10 transition-colors duration-300 group"
                           >
-                            <img src={result.image_url} className="w-10 h-10 rounded-xl object-cover" alt="" />
+                            <img 
+                              src={result.image_url} 
+                              className="w-10 h-10 rounded-lg object-cover border border-studio-border" 
+                              alt={result.name} 
+                            />
                             <div className="flex-1">
-                              <p className="text-xs font-bold text-panda-black group-hover:text-digital-lavender">{result.name}</p>
-                              <p className="text-[10px] font-black text-digital-lavender uppercase">${result.price}</p>
+                              <p className="text-xs font-bold text-studio-text-title group-hover:text-studio-primary transition-colors duration-300">
+                                {result.name}
+                              </p>
+                              <p className="text-[10px] font-black text-studio-primary uppercase">
+                                ${result.price}
+                              </p>
                             </div>
                           </Link>
                         ))}
@@ -160,73 +155,97 @@ export default function Navbar() {
           </div>
 
           {/* --- ICONOS DERECHA --- */}
-          <div className="flex gap-4 items-center shrink-0">
-            {!isSearchOpen && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                onClick={() => setIsSearchOpen(true)}
-                className="p-2.5 hover:bg-gray-100 rounded-full transition-colors cursor-pointer text-panda-black"
-              >
-                <FiSearch size={22} />
-              </motion.div>
-            )}
+<div className="flex gap-4 items-center shrink-0">
+  
+  {/* BUSCADOR (Solo si no está abierto) */}
+  {!isSearchOpen && (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      onClick={() => setIsSearchOpen(true)}
+      className="p-2.5 hover:bg-studio-bg rounded-xl transition-colors cursor-pointer text-studio-text-title"
+    >
+      <FiSearch size={22} />
+    </motion.div>
+  )}
 
-            <div onClick={() => setIsCartOpen(true)} className="relative p-2.5 hover:bg-gray-100 rounded-full cursor-pointer">
-              <FiShoppingBag size={22} />
-              {cartCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-digital-lavender text-white text-[10px] flex items-center justify-center rounded-full font-bold">
-                  {cartCount}
-                </span>
-              )}
-            </div>
+  {/* CARRITO */}
+  <div 
+    onClick={() => setIsCartOpen(true)} 
+    className="relative p-2.5 hover:bg-studio-bg rounded-xl cursor-pointer text-studio-text-title"
+  >
+    <FiShoppingCart size={22} />
+    {cartCount > 0 && (
+      <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] bg-studio-primary text-white text-[10px] flex items-center justify-center rounded-full font-bold px-1">
+        {cartCount}
+      </span>
+    )}
+  </div>
 
-            {/* BOTÓN USUARIO */}
-            {!user ? (
-              <button onClick={() => setIsAuthOpen(true)} className="w-10 h-10 rounded-full bg-sakura-pink border-2 border-white shadow-sm flex items-center justify-center hover:scale-110 transition-transform">
-                <FiUser size={20} className="text-panda-black" />
-              </button>
-            ) : (
-              <div className="relative" ref={menuRef}>
-                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="w-10 h-10 rounded-full bg-digital-lavender border-2 border-white shadow-md flex items-center justify-center overflow-hidden">
-                  {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-white font-bold text-xs">{user.email[0].toUpperCase()}</span>
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {isMenuOpen && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2">
-                      <Link to="/cuenta" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-panda-black/60 hover:bg-soft-snow hover:text-digital-lavender transition-all">
-                        <FiSettings /> Mi Cuenta
-                      </Link>
-                      <Link to="/pedidos" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-panda-black/60 hover:bg-soft-snow hover:text-digital-lavender transition-all">
-                        <FiShoppingBag /> Mis Pedidos
-                      </Link>
-                      <Link 
-                        to="/favoritos" 
-                        className="flex items-center gap-3 px-4 py-2 text-sm text-panda-black hover:bg-soft-snow transition-colors"
-                      >
-                        <FiHeart className="text-digital-lavender" /> Mis Favoritos
-                      </Link>
-                      <Link 
-                        to="/descargas"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-panda-black/60 hover:bg-soft-snow hover:text-digital-lavender transition-all"
-                      >
-                        <FiDownload size={16} /> Mis Descargas
-                      </Link>
-                      <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-400 hover:bg-red-50 border-t border-gray-50">
-                        <FiLogOut /> Cerrar Sesión
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
+  {/* BOTÓN USUARIO (LOGGED OUT) */}
+  {!user ? (
+    <button 
+      onClick={() => setIsAuthOpen(true)} 
+      className="w-10 h-10 rounded-xl bg-studio-bg border border-studio-border text-studio-text-title flex items-center justify-center hover:bg-studio-primary/10 hover:text-studio-primary hover:border-studio-primary/30 transition-all"
+    >
+      <FiUser size={20} />
+    </button>
+  ) : (
+    /* BOTÓN USUARIO (LOGGED IN) */
+    <div className="relative" ref={menuRef}>
+      <button 
+        onClick={() => setIsMenuOpen(!isMenuOpen)} 
+        className="w-10 h-10 rounded-xl bg-studio-surface border-2 border-studio-border hover:border-studio-primary transition-all flex items-center justify-center overflow-hidden"
+      >
+        {profile?.avatar_url ? (
+          <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
+        ) : (
+          <div className="w-full h-full bg-studio-primary text-white flex items-center justify-center font-bold text-sm">
+            {user.email[0].toUpperCase()}
           </div>
+        )}
+      </button>
+
+      {/* MENÚ DESPLEGABLE */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0, y: 10 }} 
+            className="absolute right-0 mt-3 w-52 bg-studio-surface rounded-xl shadow-flat border border-studio-border py-2 z-50"
+          >
+            {/* Links del Menú */}
+            {[
+              { to: "/cuenta", icon: <FiSettings />, label: "Mi Cuenta" },
+              { to: "/pedidos", icon: <FiShoppingCart />, label: "Mis Pedidos" },
+              { to: "/favoritos", icon: <FiHeart />, label: "Mis Favoritos" },
+              { to: "/descargas", icon: <FiDownload />, label: "Mis Descargas" },
+            ].map((item) => (
+              <Link 
+                key={item.to}
+                to={item.to} 
+                onClick={() => setIsMenuOpen(false)} 
+                className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-studio-text-body hover:bg-studio-primary/10 hover:text-studio-primary transition-all"
+              >
+                <span className="text-lg">{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+
+            {/* Botón Cerrar Sesión */}
+            <button 
+              onClick={handleLogout} 
+              className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-50 border-t border-studio-border transition-colors mt-1"
+            >
+              <FiLogOut className="text-lg" /> Cerrar Sesión
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )}
+</div>
         </div>
       </nav>
       
