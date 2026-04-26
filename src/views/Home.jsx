@@ -5,7 +5,7 @@ import ProductSection from '../components/ui/ProductSection';
 export default function Home() {
   return (
     <div className="animate-fade-in">
-      <div className="py-10 bg-soft-snow">
+      <div className="bg-studio-bg">
          <NewsCarousel />
       </div>
       <Features />

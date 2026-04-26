@@ -65,7 +65,13 @@ export default function ProductCard({ product }) {
       className="group bg-white rounded-[2.5rem] p-4 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col h-full relative"
     >
       <div className="relative aspect-square rounded-[2rem] overflow-hidden bg-studio-bg mb-6 border border-gray-50">
-        <img src={product.image_url} alt="" className="w-full h-full object-cover" />
+        <Link to={`/producto/${product.id}`} className="block w-full h-full">
+          <img 
+            src={product.image_url} 
+            alt={product.name} 
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 cursor-pointer" 
+          />
+        </Link>
 
         {/* ETIQUETA PRECIO */}
         {!hasPurchased && (

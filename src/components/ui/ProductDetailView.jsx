@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   FiArrowLeft, FiShoppingBag, FiCheckCircle, 
   FiCheck, FiPackage, FiZap, FiDownloadCloud, 
-  FiShield, FiStar, FiHeart, FiMonitor, FiSmartphone
+  FiShield, FiStar, FiHeart, FiMonitor, FiSmartphone,
+  FiMinus, FiPlus
 } from 'react-icons/fi';
 import { FaWindows, FaApple, FaAndroid } from 'react-icons/fa6';
 import { motion } from 'framer-motion';
@@ -19,7 +20,19 @@ export default function ProductDetailView() {
   const [hasPurchased, setHasPurchased] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
-  const { addToCart } = useCart();
+  const [quantity, setQuantity] = useState(1);
+  const {addToCart, cart} = useCart();
+  const [stats, setStats] = useState({ avg: 0, count: 0 });
+
+  // Helper para identificar si es descargable
+  const isDownloadable = product?.product_types?.name?.toLowerCase().includes('descargable');
+  
+  // Verificar si el producto ya está en el carrito
+  const isInCart = cart.some(item => item.id === id);
+
+  // Buscamos si el producto actual ya está en el carrito para sincronizar la cantidad
+  const [localQuantity, setLocalQuantity] = useState(1);
+
 
   const getCategoryIcon = (categoryName) => {
     const name = categoryName?.toLowerCase() || '';
@@ -27,7 +40,7 @@ export default function ProductDetailView() {
     if (name.includes('windows')) return <FaWindows size={14} className="mr-1.5" />;
     if (name.includes('movil') || name.includes('android') || name.includes('ios')) return <FiSmartphone size={14} className="mr-1.5" />;
     return <FiMonitor size={14} className="mr-1.5" />; // Default
-  };  
+  };
 
   useEffect(() => {
     async function getProductData() {
@@ -50,6 +63,8 @@ export default function ProductDetailView() {
           .eq('orders.user_id', user.id)
           .eq('orders.status', 'completed')
           .maybeSingle();
+        
+        // Solo marcamos como comprado si es tipo descargable para la lógica de UI
         if (purchase) setHasPurchased(true);
 
         // Verificar favorito
@@ -66,8 +81,32 @@ export default function ProductDetailView() {
     getProductData();
   }, [id, navigate]);
 
+  useEffect(() => {
+  async function getProductStats() {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('rating')
+      .eq('product_id', id)
+      .eq('is_approved', true);
+
+    if (data && data.length > 0) {
+      const sum = data.reduce((acc, item) => acc + item.rating, 0);
+      const avg = sum / data.length;
+      setStats({ 
+        avg: parseFloat(avg.toFixed(1)), 
+        count: data.length 
+      });
+    } else {
+      setStats({ avg: 0, count: 0 });
+    }
+  }
+
+  getProductStats();
+}, [id]);
+
   const handleAddToCart = () => {
-    addToCart(product);
+    if (isDownloadable && isInCart) return;
+    addToCart(product, localQuantity);
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
   };
@@ -113,7 +152,6 @@ export default function ProductDetailView() {
             animate={{ opacity: 1, x: 0 }}
             className="lg:sticky lg:top-28"
           >
-            {/* Imagen Principal */}
             <div className="relative bg-white rounded-2xl border border-studio-border overflow-hidden aspect-square shadow-flat">
               <img
                 src={product.image_url}
@@ -121,9 +159,9 @@ export default function ProductDetailView() {
                 className="w-full h-full object-cover"
               />
 
-              {/* Badge de precio o adquirido */}
+              {/* Badge de precio o adquirido (Solo para descargables comprados) */}
               <div className="absolute top-4 left-4">
-                {hasPurchased ? (
+                {(isDownloadable && hasPurchased) ? (
                   <span className="bg-studio-primary text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5">
                     <FiCheck size={12} strokeWidth={3} /> Adquirido
                   </span>
@@ -134,7 +172,6 @@ export default function ProductDetailView() {
                 )}
               </div>
 
-              {/* Botones flotantes */}
               <div className="absolute top-4 right-4 flex flex-col gap-2">
                 <button
                   onClick={toggleFavorite}
@@ -148,7 +185,6 @@ export default function ProductDetailView() {
                 </button>
               </div>
 
-              {/* Watermark sutil */}
               <div className="absolute bottom-4 right-4 text-studio-text-title/10 font-black text-2xl select-none pointer-events-none">
                 A<span className="text-studio-primary/10">&</span>B
               </div>
@@ -161,22 +197,31 @@ export default function ProductDetailView() {
             animate={{ opacity: 1, x: 0 }}
             className="space-y-6"
           >
-            {/* Tags */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="bg-studio-primary/10 text-studio-primary text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-md flex items-center">
                 {getCategoryIcon(product.categories?.name)}
                 {product.categories?.name}
               </span>
-              {/* Estrellas */}
               <div className="flex items-center gap-1 ml-auto">
-                {[1,2,3,4,5].map(s => (
-                  <FiStar key={s} size={14} className="text-amber-400" fill="currentColor" />
-                ))}
-                <span className="text-xs text-studio-secondary font-medium ml-1">5.0</span>
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const isFilled = stats.count > 0 && star <= Math.round(stats.avg);
+                  
+                  return (
+                    <FiStar 
+                      key={star} 
+                      size={14} 
+                      className={isFilled ? "text-amber-400" : "text-gray-300"} 
+                      fill={isFilled ? "currentColor" : "none"} 
+                    />
+                  );
+                })}
+                
+                <span className="text-[10px] text-studio-secondary font-black ml-1 uppercase">
+                  {stats.avg > 0 ? stats.avg : "0.0"} ({stats.count} Reviews)
+                </span>
               </div>
             </div>
 
-            {/* Título y descripción */}
             <div className="space-y-3">
               <h1 className="text-4xl font-black text-studio-text-title leading-tight tracking-tight">
                 {product.name}
@@ -186,28 +231,33 @@ export default function ProductDetailView() {
               </p>
             </div>
 
-            {/* Precio destacado */}
+            {!(isDownloadable && hasPurchased) && (
               <div className="flex items-baseline gap-2">
                 <span className="text-5xl font-black text-studio-text-title">${product.price}</span>
                 <span className="text-studio-secondary text-sm font-medium">USD · Pago único</span>
               </div>
+            )}
 
-            {/* CARD DE COMPRA */}
             <div className="bg-white rounded-2xl border border-studio-border p-6 space-y-5">
-
-              {/* Disponibilidad */}
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-studio-primary rounded-full animate-pulse" />
                 <span className="text-sm font-medium text-studio-primary">Disponible para entrega inmediata</span>
               </div>
 
-              {/* Botón principal */}
-              {hasPurchased ? (
+              {/* Botón principal con lógica condicional */}
+              {(isDownloadable && hasPurchased) ? (
                 <button
                   onClick={() => navigate('/inventario')}
                   className="w-full bg-studio-text-title text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-studio-primary transition-all"
                 >
                   <FiPackage size={18} /> Ver en mi Inventario
+                </button>
+              ) : (isDownloadable && isInCart) ? (
+                <button
+                  disabled
+                  className="w-full bg-studio-bg text-studio-secondary/50 font-bold py-4 rounded-xl flex items-center justify-center gap-2 border border-studio-border cursor-not-allowed"
+                >
+                  <FiCheckCircle size={18} /> Ya en el carrito
                 </button>
               ) : (
                 <button
@@ -221,17 +271,16 @@ export default function ProductDetailView() {
                   {addedToCart ? (
                     <><FiCheck size={18} strokeWidth={3} /> ¡Añadido al carrito!</>
                   ) : (
-                    <><FiShoppingBag size={18} /> Añadir al Carrito</>
+                    <><FiShoppingBag size={18} /> Añadir al Carrito {quantity > 1 ? `(${quantity})` : ''}</>
                   )}
                 </button>
               )}
+
               <p className="text-center text-[10px] text-studio-secondary/60 uppercase tracking-widest font-bold">
                 Checkout seguro · Dodo Payments
               </p>
             </div>
 
-            
-            {/* Specs rápidos DEBAJO de la imagen */}
             <div className="grid grid-cols-3 gap-3 mt-4">
               {[
                 { icon: FiZap, label: 'Formato', val: 'High-Res' },
@@ -249,7 +298,6 @@ export default function ProductDetailView() {
           </motion.div>
         </div>
 
-        {/* REVIEWS */}
         <div className="mt-20 pt-12 border-t border-studio-border">
           <ProductReviews productId={product.id} />
         </div>
