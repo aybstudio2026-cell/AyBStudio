@@ -44,7 +44,7 @@ export default function WishlistView() {
 
         <main className="flex-1 bg-white rounded-xl p-8 md:p-12 border border-gray-100 shadow-sm min-h-[600px]">
           
-          <div className="mb-12 border-b border-gray-50 pb-10">
+          <div className="mb-6 border-b border-gray-50 pb-5">
             <h1 className="text-2xl font-bold text-studio-text-title uppercase tracking-tight flex items-center gap-3">
               <div className="p-2.5 bg-studio-primary/10 rounded-lg text-studio-primary">
                 <FiHeart size={20} />
