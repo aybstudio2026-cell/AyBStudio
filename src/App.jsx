@@ -38,7 +38,7 @@ function AppContent() {
           <Route path="/terminos" element={<TermsView />} />
           <Route path="/privacidad" element={<PrivacyView />} />
           <Route path="/tienda" element={<StoreView />} />
-          <Route path="/descargas" element={<DownloadsView />} />
+          <Route path="/inventario" element={<DownloadsView />} />
           <Route path="/success" element={<SuccessView />} />
           <Route path="/favoritos" element={<WishlistView />} />
 

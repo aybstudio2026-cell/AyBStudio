@@ -218,9 +218,9 @@ export default function Navbar() {
             {/* Links del Menú */}
             {[
               { to: "/cuenta", icon: <FiSettings />, label: "Mi Cuenta" },
-              { to: "/pedidos", icon: <FiShoppingCart />, label: "Mis Pedidos" },
-              { to: "/favoritos", icon: <FiHeart />, label: "Mis Favoritos" },
-              { to: "/descargas", icon: <FiDownload />, label: "Mis Descargas" },
+              { to: "/pedidos", icon: <FiShoppingCart />, label: "Pedidos" },
+              { to: "/favoritos", icon: <FiHeart />, label: "Favoritos" },
+              { to: "/inventario", icon: <FiDownload />, label: "Inventario" },
             ].map((item) => (
               <Link 
                 key={item.to}

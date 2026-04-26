@@ -1,126 +1,172 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { FiDownload, FiPackage, FiExternalLink, FiSearch, FiFileText } from 'react-icons/fi';
-import { motion } from 'framer-motion';
+import { FiDownload, FiPackage, FiSearch, FiInbox, FiKey, FiCopy, FiCheck } from 'react-icons/fi';
+import UserSidebar from '../components/layout/UserSidebar';
 
-export default function DownloadsView() {
-  const [downloads, setDownloads] = useState([]);
+export default function InventoryView() {
+  const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeFilter, setActiveFilter] = useState("todos");
+  const [copiedId, setCopiedId] = useState(null);
 
   useEffect(() => {
-    async function fetchUserDownloads() {
+    async function fetchInventory() {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) return;
 
-      // Traemos los items de los pedidos completados
       const { data, error } = await supabase
         .from('order_items')
         .select(`
           id,
+          quantity,
           products (
-            id,
-            name,
-            image_url,
-            download_url,
+            id, name, image_url, download_url, secret_key,
             product_types ( name )
           ),
-          orders!inner ( status, user_id )
+          orders!inner ( status, user_id, created_at )
         `)
         .eq('orders.user_id', user.id)
-        .eq('orders.status', 'completed'); // Solo lo que ya pagó
+        .eq('orders.status', 'completed');
 
       if (!error) {
-        // Eliminamos duplicados si el usuario compró el mismo producto dos veces
-        const uniqueProducts = Array.from(new Map(data.map(item => [item.products.id, item.products])).values());
-        setDownloads(uniqueProducts);
+        const processedItems = [];
+        const uniqueDownloadables = new Set();
+
+        data.forEach(item => {
+          const type = item.products.product_types?.name.toLowerCase();
+
+          if (type === 'descargable') {
+            // REGLA 1: Solo una vez por producto (Downloadables)
+            if (!uniqueDownloadables.has(item.products.id)) {
+              processedItems.push({ ...item, displayType: 'download' });
+              uniqueDownloadables.add(item.products.id);
+            }
+          } else if (type === 'consumible') {
+            // REGLA 2: Mostrar tantas veces como cantidad comprada
+            // Si compró 3, generamos 3 tarjetas individuales
+            for (let i = 0; i < item.quantity; i++) {
+              processedItems.push({ 
+                ...item, 
+                displayType: 'consumible',
+                instanceKey: `${item.id}-${i}` 
+              });
+            }
+          }
+        });
+
+        setInventory(processedItems);
       }
       setLoading(false);
     }
-
-    fetchUserDownloads();
+    fetchInventory();
   }, []);
 
-  const filteredDownloads = downloads.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const copyToClipboard = (text, id) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
-  if (loading) return <div className="p-40 text-center font-black animate-pulse text-digital-lavender">PREPARANDO TUS ARCHIVOS...</div>;
+  const filteredItems = inventory.filter(item => {
+    const matchesSearch = item.products.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = activeFilter === "todos" || item.displayType === activeFilter;
+    return matchesSearch && matchesFilter;
+  });
 
   return (
-    <div className="pt-32 pb-20 min-h-screen bg-soft-snow">
-      <div className="max-w-6xl mx-auto px-6">
+    <div className="pt-32 pb-20 min-h-screen bg-studio-bg flex justify-center items-start">
+      <div className="w-full max-w-7xl px-4 md:px-10 flex flex-col md:flex-row gap-10 items-start">
         
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-          <div>
-            <h1 className="text-5xl font-black text-panda-black uppercase tracking-tighter">Mi Librería</h1>
-            <p className="text-xs font-bold text-panda-black/40 uppercase tracking-widest mt-2">Tus recursos digitales de A&B Studio</p>
+        <UserSidebar />
+
+        <main className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden min-h-[700px]">
+          {/* Header con Buscador (Mismo que antes) */}
+          <div className="p-8 md:p-10 border-b border-gray-50 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <h1 className="text-2xl font-bold text-studio-text-title uppercase tracking-tight flex items-center gap-3">
+              <div className="p-2.5 bg-studio-primary/10 rounded-lg text-studio-primary">
+                <FiPackage size={20} />
+              </div>
+              Mi Inventario
+            </h1>
+            {/* TOGGLE SELECTOR (3 OPCIONES) */}
+            <div className="flex items-center gap-1 bg-studio-bg p-1.5 rounded-2xl w-fit border border-gray-100">
+              {[
+                { id: 'todos', label: 'Todos' },
+                { id: 'download', label: 'Descargables' },
+                { id: 'consumible', label: 'Consumibles' }
+              ].map((option) => (
+                <button
+                  key={option.id}
+                  onClick={() => setActiveFilter(option.id)}
+                  className={`
+                    px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
+                    ${activeFilter === option.id 
+                      ? 'bg-white text-studio-primary shadow-sm ring-1 ring-black/5' 
+                      : 'text-studio-secondary hover:text-studio-text-title'
+                    }
+                  `}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="relative w-full md:w-72">
-            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-panda-black/20" />
-            <input 
-              type="text"
-              placeholder="Buscar en mis compras..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white border border-gray-100 rounded-2xl py-3 pl-12 pr-4 text-xs font-bold outline-none focus:ring-2 focus:ring-digital-lavender transition-all"
-            />
-          </div>
-        </div>
-
-        {filteredDownloads.length === 0 ? (
-          <div className="bg-white rounded-[3rem] p-20 text-center border border-gray-100 italic text-panda-black/20 font-bold">
-            {searchTerm ? "No se encontraron coincidencias en tu librería" : "Aún no tienes productos para descargar"}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredDownloads.map((item) => (
-              <motion.div 
-                layout
-                key={item.id}
-                className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center gap-6 group hover:shadow-xl transition-all"
-              >
-                <div className="w-24 h-24 rounded-3xl overflow-hidden shrink-0 bg-soft-snow">
-                  <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[9px] font-black bg-digital-lavender/10 text-digital-lavender px-2 py-0.5 rounded-full uppercase">
-                      {item.product_types?.name || 'Digital'}
-                    </span>
-                  </div>
-                  <h3 className="font-black text-panda-black text-lg truncate mb-4">{item.name}</h3>
+          <div className="p-8 grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {filteredItems.length === 0 ? (
+              <div className="col-span-full py-32 flex flex-col items-center justify-center opacity-30 text-center">
+                <FiInbox size={48} />
+                <p className="font-bold uppercase tracking-widest text-[10px] mt-4">Inventario vacío</p>
+              </div>
+            ) : (
+              filteredItems.map((item) => (
+                <div key={item.instanceKey || item.id} className="flex items-center gap-5 p-5 rounded-2xl border border-gray-100 bg-white hover:border-studio-primary/20 transition-all group">
                   
-                  <a 
-                    href={item.download_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-panda-black text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-digital-lavender transition-all active:scale-95"
-                  >
-                    <FiDownload /> Descargar Ahora
-                  </a>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+                  {/* Miniatura */}
+                  <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-gray-50 relative">
+                    <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
+                    <div className={`absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity`}>
+                       {item.displayType === 'download' ? <FiDownload className="text-white" /> : <FiKey className="text-white" />}
+                    </div>
+                  </div>
 
-        <div className="mt-20 p-10 bg-digital-lavender/5 rounded-[3rem] border border-digital-lavender/10 flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
-          <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-digital-lavender">
-            <FiFileText size={32} />
+                  {/* Info Dinámica */}
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-[9px] font-black uppercase tracking-widest ${item.displayType === 'download' ? 'text-studio-primary' : 'text-amber-500'}`}>
+                      {item.displayType === 'download' ? 'Acceso Permanente' : 'Código Único'}
+                    </span>
+                    <h3 className="font-bold text-studio-text-title text-sm truncate mb-3">{item.products.name}</h3>
+
+                    {/* LÓGICA DE BOTÓN SEGÚN TIPO */}
+                    {item.displayType === 'download' ? (
+                      <a 
+                        href={item.products.download_url} 
+                        target="_blank" 
+                        className="inline-flex items-center gap-2 bg-studio-text-title text-white px-5 py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-studio-primary transition-all active:scale-95 shadow-sm"
+                      >
+                        <FiDownload /> Descargar
+                      </a>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <code className="bg-studio-bg px-3 py-2 rounded-lg text-[11px] font-mono font-bold text-studio-text-body border border-gray-100">
+                          {item.products.secret_key || 'SIN CÓDIGO'} 
+                        </code>
+                        <button 
+                          onClick={() => copyToClipboard(item.products.secret_key, item.instanceKey)}
+                          className="p-2.5 bg-studio-bg text-studio-secondary rounded-lg hover:text-studio-primary transition-colors"
+                        >
+                          {copiedId === item.instanceKey ? <FiCheck className="text-green-500" /> : <FiCopy />}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-          <div>
-            <h4 className="font-black text-panda-black uppercase tracking-tight">¿Necesitas ayuda con tu software?</h4>
-            <p className="text-sm font-medium text-panda-black/50 italic">Consulta nuestra documentación o contacta con soporte técnico de A&B Studio.</p>
-          </div>
-          <button className="md:ml-auto text-xs font-black text-digital-lavender border-b-2 border-digital-lavender pb-1 uppercase tracking-widest">
-            Soporte Técnico
-          </button>
-        </div>
+        </main>
       </div>
     </div>
   );

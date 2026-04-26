@@ -4,9 +4,9 @@ import { FiUser, FiShoppingBag, FiHeart, FiDownload, FiLock } from 'react-icons/
 export default function UserSidebar() {
   const sidebarLinks = [
     { to: "/cuenta", label: "Mi Cuenta", icon: FiUser },
-    { to: "/pedidos", label: "Mis Pedidos", icon: FiShoppingBag },
+    { to: "/pedidos", label: "Pedidos", icon: FiShoppingBag },
     { to: "/favoritos", label: "Favoritos", icon: FiHeart },
-    { to: "/descargas", label: "Descargas", icon: FiDownload },
+    { to: "/inventario", label: "Inventario", icon: FiDownload },
     { to: "/seguridad", label: "Seguridad", icon: FiLock },
   ];
 
