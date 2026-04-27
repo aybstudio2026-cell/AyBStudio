@@ -74,15 +74,8 @@ export default function Footer() {
               <li>
                 <Link to="/tienda" className="hover:text-white transition-colors">Productos</Link>
               </li>
-              <li>
-                <Link to="/terminos" className="hover:text-white transition-colors">Términos</Link>
-              </li>
-              <li>
-                <Link to="/privacidad" className="hover:text-white transition-colors">Privacidad</Link>
-              </li>
             </ul>
           </nav>
-
           <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.3em]">
             © 2026 A&B Studio.
           </p>

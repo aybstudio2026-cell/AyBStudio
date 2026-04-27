@@ -5,8 +5,6 @@ import Home from './views/Home';
 import EditProfileView from './views/EditProfileView';
 import ProductDetailView from './components/ui/ProductDetailView';
 import OrdersView from './views/OrdersView';
-import TermsView from './views/TermsView';
-import PrivacyView from './views/PrivacyView';
 import CheckoutView from './views/CheckoutView';
 import StoreView from './views/StoreView';
 import DownloadsView from './views/DownloadsView';
@@ -35,8 +33,6 @@ function AppContent() {
           <Route path="/pedidos" element={<OrdersView />} />
           <Route path="/producto/:id" element={<ProductDetailView />} />
           <Route path="/checkout" element={<CheckoutView />} />
-          <Route path="/terminos" element={<TermsView />} />
-          <Route path="/privacidad" element={<PrivacyView />} />
           <Route path="/tienda" element={<StoreView />} />
           <Route path="/inventario" element={<DownloadsView />} />
           <Route path="/success" element={<SuccessView />} />

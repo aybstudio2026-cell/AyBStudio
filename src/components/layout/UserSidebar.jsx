@@ -7,7 +7,6 @@ export default function UserSidebar() {
     { to: "/pedidos", label: "Pedidos", icon: FiShoppingBag },
     { to: "/favoritos", label: "Favoritos", icon: FiHeart },
     { to: "/inventario", label: "Inventario", icon: FiDownload },
-    { to: "/seguridad", label: "Seguridad", icon: FiLock },
   ];
 
   return (

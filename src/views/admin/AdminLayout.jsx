@@ -4,7 +4,7 @@ import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import {
   FiGrid, FiPackage, FiUsers, FiShoppingBag,
-  FiRadio, FiLogOut, FiMenu, FiX, FiChevronRight, FiStar
+  FiRadio, FiLogOut, FiMenu, FiX, FiChevronRight, FiStar, FiShield
 } from 'react-icons/fi';
 
 const navItems = [
@@ -48,8 +48,8 @@ export default function AdminLayout() {
   };
 
   if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-[#0f1117]">
-      <div className="w-10 h-10 border-4 border-digital-lavender border-t-transparent rounded-full animate-spin" />
+    <div className="h-screen flex items-center justify-center bg-studio-bg">
+      <div className="w-8 h-8 border-2 border-studio-primary border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
@@ -59,74 +59,83 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-[#0f1117] text-white overflow-hidden">
+    <div className="flex h-screen bg-studio-bg text-studio-text-title overflow-hidden">
 
-      {/* SIDEBAR */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 bg-[#161b27] border-r border-white/5 flex flex-col shrink-0`}>
+      {/* SIDEBAR GÉLIDO */}
+      <aside className={`${sidebarOpen ? 'w-72' : 'w-24'} transition-all duration-500 bg-white border-r border-studio-border flex flex-col shrink-0 shadow-sm z-50`}>
 
-        {/* Logo */}
-        <div className="p-6 flex items-center justify-between border-b border-white/5">
+        {/* Logo Section */}
+        <div className="p-8 flex items-center justify-between">
           {sidebarOpen && (
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-digital-lavender rounded-lg flex items-center justify-center font-black text-xs">
+              <div className="w-10 h-10 bg-studio-primary rounded-2xl flex items-center justify-center font-black text-[10px] text-white shadow-lg shadow-studio-primary/20">
                 A&B
               </div>
-              <div>
-                <p className="font-black text-sm tracking-tighter">Admin Panel</p>
-                <p className="text-[10px] text-white/30 uppercase tracking-widest">Studio</p>
+              <div className="leading-none">
+                <p className="font-black text-xs tracking-tighter uppercase italic">Control <span className="text-studio-primary">Panel</span></p>
+                <p className="text-[9px] text-studio-secondary font-black uppercase tracking-[0.3em] opacity-40">Studio v2.0</p>
               </div>
             </div>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-white/5 rounded-lg transition-colors text-white/40"
+            className="p-2 hover:bg-studio-bg rounded-xl transition-all text-studio-secondary/40 hover:text-studio-primary"
           >
-            {sidebarOpen ? <FiX size={18} /> : <FiMenu size={18} />}
+            {sidebarOpen ? <FiX size={18} /> : <FiMenu size={20} className="mx-auto" />}
           </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 p-4 space-y-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-sm font-bold ${
-                isActive(item)
-                  ? 'bg-digital-lavender text-white shadow-lg shadow-digital-lavender/20'
-                  : 'text-white/40 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <item.icon size={18} className="shrink-0" />
-              {sidebarOpen && (
-                <>
-                  <span className="flex-1">{item.label}</span>
-                  {isActive(item) && <FiChevronRight size={14} />}
-                </>
-              )}
-            </Link>
-          ))}
+        {/* Navigation Items */}
+        <nav className="flex-1 px-4 space-y-2 mt-4">
+          {navItems.map((item) => {
+            const active = isActive(item);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group ${
+                  active
+                    ? 'bg-studio-text-title text-white shadow-xl shadow-studio-text-title/10'
+                    : 'text-studio-secondary hover:bg-studio-bg hover:text-studio-primary'
+                }`}
+              >
+                <item.icon size={18} className={`shrink-0 ${active ? 'text-studio-primary' : 'group-hover:scale-110 transition-transform'}`} />
+                {sidebarOpen && (
+                  <>
+                    <span className={`flex-1 text-[11px] font-black uppercase tracking-widest ${active ? 'opacity-100' : 'opacity-60'}`}>
+                      {item.label}
+                    </span>
+                    {active && <FiChevronRight size={14} className="text-studio-primary" />}
+                  </>
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* User */}
-        <div className="p-4 border-t border-white/5">
-          <div className={`flex items-center gap-3 ${!sidebarOpen && 'justify-center'}`}>
-            <div className="w-9 h-9 rounded-xl bg-digital-lavender flex items-center justify-center font-black text-xs shrink-0 overflow-hidden">
+        {/* User Footer Section */}
+        <div className="p-6 border-t border-studio-border bg-gray-50/50">
+          <div className={`flex items-center gap-4 ${!sidebarOpen && 'justify-center'}`}>
+            <div className="w-10 h-10 rounded-2xl bg-studio-bg border border-studio-border flex items-center justify-center font-black text-xs shrink-0 overflow-hidden shadow-inner">
               {user?.avatar_url
-                ? <img src={user.avatar_url} className="w-full h-full object-cover" />
-                : user?.email?.[0].toUpperCase()
+                ? <img src={user.avatar_url} className="w-full h-full object-cover" alt="" />
+                : <span className="text-studio-primary">{user?.email?.[0].toUpperCase()}</span>
               }
             </div>
             {sidebarOpen && (
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-black truncate">{user?.username || 'Admin'}</p>
-                <p className="text-[10px] text-white/30 truncate">{user?.email}</p>
+                <p className="text-[10px] font-black uppercase tracking-tight truncate">{user?.username || 'Administrator'}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <FiShield size={10} className="text-studio-primary" />
+                  <p className="text-[9px] font-bold text-studio-secondary/50 uppercase tracking-widest truncate">Sistema Core</p>
+                </div>
               </div>
             )}
             {sidebarOpen && (
               <button
                 onClick={handleLogout}
-                className="p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors text-white/30"
+                className="w-10 h-10 flex items-center justify-center hover:bg-red-500/10 hover:text-red-500 rounded-xl transition-all text-studio-secondary/20"
+                title="Cerrar Sesión"
               >
                 <FiLogOut size={16} />
               </button>
@@ -135,9 +144,14 @@ export default function AdminLayout() {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
-      <main className="flex-1 overflow-y-auto">
-        <Outlet />
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 overflow-y-auto relative">
+        {/* Decoración de fondo sutil */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-studio-primary/5 blur-[120px] -mr-48 -mt-48 pointer-events-none" />
+        
+        <div className="relative z-10">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
