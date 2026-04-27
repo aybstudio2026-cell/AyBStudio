@@ -1,5 +1,5 @@
 // src/views/admin/AdminProducts.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { 
   FiPlus, FiEdit2, FiTrash2, FiImage, FiX, 
@@ -12,9 +12,19 @@ export default function AdminProducts() {
   const [categories, setCategories] = useState([]);
   const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const [totalCount, setTotalCount] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  
+  const [uploading, setUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMeta, setToastMeta] = useState({ title: '', subtitle: '' });
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     id: null,
     name: '',
@@ -23,9 +33,9 @@ export default function AdminProducts() {
     category_id: '',
     type_id: '',
     image_url: '',
-    dodo_product_id: '', // Nuevo campo
-    download_url: '',    // Nuevo campo
-    secret_key: '',      // Nuevo campo
+    dodo_product_id: '', 
+    download_url: '',    
+    secret_key: '',      
     state: true
   });
 
@@ -33,23 +43,47 @@ export default function AdminProducts() {
     fetchInitialData();
   }, []);
 
+  useEffect(() => {
+    fetchProductsPage(page);
+  }, [page]);
+
   async function fetchInitialData() {
     setLoading(true);
-    const [prods, cats, typs] = await Promise.all([
-      supabase.from('products').select('*, categories(name), product_types(name)').order('created_at', { ascending: false }),
+    const [prodsCount, cats, typs] = await Promise.all([
+      supabase.from('products').select('id', { count: 'exact', head: true }),
       supabase.from('categories').select('*'),
       supabase.from('product_types').select('*')
     ]);
 
-    if (prods.data) setProducts(prods.data);
+    setTotalCount(prodsCount.count || 0);
     if (cats.data) setCategories(cats.data);
     if (typs.data) setTypes(typs.data);
+    setLoading(false);
+  }
+
+  async function fetchProductsPage(nextPage) {
+    setLoading(true);
+    const from = (nextPage - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const [prods, prodsCount] = await Promise.all([
+      supabase
+        .from('products')
+        .select('*, categories(name), product_types(name)')
+        .order('created_at', { ascending: false })
+        .range(from, to),
+      supabase.from('products').select('id', { count: 'exact', head: true })
+    ]);
+
+    if (prods.data) setProducts(prods.data);
+    setTotalCount(prodsCount.count || 0);
     setLoading(false);
   }
 
   const openModal = (product = null) => {
     if (product) {
       setFormData({ ...product });
+      setImagePreview(product.image_url || null);
     } else {
       setFormData({
         name: '',
@@ -63,13 +97,53 @@ export default function AdminProducts() {
         secret_key: '',
         state: true
       });
+      setImagePreview(null);
     }
     setIsModalOpen(true);
   };
 
+  async function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => setImagePreview(ev.target.result);
+    reader.readAsDataURL(file);
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `product-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('products')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('products')
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({ ...prev, image_url: publicUrl }));
+    } catch (error) {
+      alert('Error al subir imagen: ' + error.message);
+      setImagePreview(null);
+      setFormData(prev => ({ ...prev, image_url: '' }));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleSave(e) {
     e.preventDefault();
+    if (!formData.image_url) {
+      alert('Debes subir una imagen');
+      return;
+    }
     setSaving(true);
+
+    const isEditing = Boolean(formData.id);
 
     const productToSave = { ...formData };
     delete productToSave.categories;
@@ -83,16 +157,37 @@ export default function AdminProducts() {
       alert("Error al guardar: " + error.message);
     } else {
       setIsModalOpen(false);
-      fetchInitialData();
+      fetchProductsPage(page);
+      setToastMeta({
+        title: isEditing ? 'Producto actualizado' : 'Producto creado',
+        subtitle: isEditing ? 'Cambios guardados correctamente' : 'Nuevo activo publicado'
+      });
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 4500);
     }
     setSaving(false);
   }
 
-  async function handleDelete(id) {
-    if (window.confirm('¿Eliminar este producto permanentemente?')) {
-      const { error } = await supabase.from('products').delete().eq('id', id);
-      if (!error) fetchInitialData();
+  async function confirmDelete() {
+    if (!deleteTarget || deleteLoading) return;
+    setDeleteLoading(true);
+
+    const { error } = await supabase.from('products').delete().eq('id', deleteTarget.id);
+    if (!error) {
+      const nextTotal = Math.max(0, totalCount - 1);
+      const lastPage = Math.max(1, Math.ceil(nextTotal / pageSize));
+      const nextPage = Math.min(page, lastPage);
+      setPage(nextPage);
+      fetchProductsPage(nextPage);
+      setToastMeta({ title: 'Producto eliminado', subtitle: 'Se eliminó del inventario' });
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 4500);
+    } else {
+      alert('Error al eliminar: ' + error.message);
     }
+
+    setDeleteLoading(false);
+    setDeleteTarget(null);
   }
 
   if (loading) return (
@@ -101,6 +196,8 @@ export default function AdminProducts() {
       <p className="text-[10px] font-black uppercase tracking-[0.4em] text-studio-secondary animate-pulse">Sincronizando Inventario...</p>
     </div>
   );
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
     <div className="p-8 space-y-8 bg-studio-bg min-h-screen text-studio-text-title">
@@ -156,13 +253,37 @@ export default function AdminProducts() {
                   <td className="p-8 text-right">
                     <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => openModal(p)} className="p-3 bg-studio-bg rounded-xl text-studio-secondary hover:text-studio-primary hover:bg-studio-primary/10 transition-all shadow-sm"><FiEdit2 size={16}/></button>
-                      <button onClick={() => handleDelete(p.id)} className="p-3 bg-red-50 rounded-xl text-red-400 hover:text-red-500 hover:bg-red-100 transition-all shadow-sm"><FiTrash2 size={16}/></button>
+                      <button onClick={() => setDeleteTarget(p)} className="p-3 bg-red-50 rounded-xl text-red-400 hover:text-red-500 hover:bg-red-100 transition-all shadow-sm"><FiTrash2 size={16}/></button>
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between bg-white border border-studio-border rounded-2xl px-6 py-4 shadow-sm">
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-studio-secondary opacity-50">
+          Página {page} de {totalPages}
+        </p>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="px-4 py-2 rounded-xl border border-studio-border bg-white text-[9px] font-black uppercase tracking-widest text-studio-text-title disabled:opacity-30 hover:bg-studio-bg transition-all"
+          >
+            Anterior
+          </button>
+          <button
+            type="button"
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            className="px-4 py-2 rounded-xl border border-studio-border bg-white text-[9px] font-black uppercase tracking-widest text-studio-text-title disabled:opacity-30 hover:bg-studio-bg transition-all"
+          >
+            Siguiente
+          </button>
         </div>
       </div>
 
@@ -259,16 +380,36 @@ export default function AdminProducts() {
                 </div>
 
                 {/* URL Imagen (Full width) */}
-                <div className="md:col-span-3 space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-studio-secondary tracking-widest ml-1">URL de Portada</label>
-                  <div className="relative">
-                    <FiImage className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-primary opacity-40" />
-                    <input 
-                      type="text" required 
-                      value={formData.image_url}
-                      onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-                      className="w-full bg-studio-bg border border-studio-border rounded-xl p-3.5 pl-10 text-[11px] text-studio-text-title outline-none focus:border-studio-primary transition-all"
-                    />
+                <div className="md:col-span-3 space-y-2">
+                  <label className="text-[9px] font-black uppercase text-studio-secondary tracking-widest ml-1">Portada del Producto</label>
+                  <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
+                  <div
+                    onClick={() => !uploading && fileInputRef.current?.click()}
+                    className={`relative w-full h-44 rounded-3xl border-2 border-dashed transition-all cursor-pointer overflow-hidden flex items-center justify-center ${
+                      imagePreview ? 'border-studio-primary/20 bg-studio-bg' : 'border-studio-border hover:border-studio-primary/30 bg-studio-bg/50'
+                    }`}
+                  >
+                    {imagePreview ? (
+                      <>
+                        <img src={imagePreview} className="w-full h-full object-cover" alt="Preview" />
+                        <div className="absolute inset-0 bg-studio-text-title/40 opacity-0 hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-sm">
+                          <p className="text-white font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-2">
+                            <FiImage /> Update Image
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 text-studio-secondary/30">
+                        <FiImage size={32} />
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em]">Drop image here</p>
+                      </div>
+                    )}
+                    {uploading && (
+                      <div className="absolute inset-0 bg-white/80 flex items-center justify-center gap-3 z-10">
+                        <FiLoader className="animate-spin text-studio-primary" size={20} />
+                        <p className="text-studio-text-title font-black text-[10px] uppercase tracking-widest">Uploading...</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -316,7 +457,7 @@ export default function AdminProducts() {
 
               <button 
                 type="submit"
-                disabled={saving}
+                disabled={saving || uploading}
                 className="w-full mt-8 bg-studio-primary text-white font-black py-5 rounded-[1.5rem] shadow-xl shadow-studio-primary/20 flex items-center justify-center gap-3 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 uppercase text-[11px] tracking-[0.3em]"
               >
                 {saving ? <FiLoader className="animate-spin" /> : <FiCheck size={18} />}
@@ -324,6 +465,93 @@ export default function AdminProducts() {
               </button>
             </motion.form>
           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {deleteTarget && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !deleteLoading && setDeleteTarget(null)}
+              className="absolute inset-0 bg-studio-text-title/40 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="relative w-full max-w-md bg-white rounded-[2rem] border border-studio-border shadow-2xl p-8"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-studio-secondary opacity-60">Confirmación</p>
+                  <h3 className="text-xl font-black uppercase italic tracking-tighter text-studio-text-title mt-1">Eliminar producto</h3>
+                </div>
+                <button
+                  type="button"
+                  disabled={deleteLoading}
+                  onClick={() => setDeleteTarget(null)}
+                  className="w-10 h-10 flex items-center justify-center bg-studio-bg rounded-xl text-studio-secondary hover:text-studio-primary transition-all disabled:opacity-40"
+                >
+                  <FiX size={18} />
+                </button>
+              </div>
+
+              <p className="mt-4 text-[12px] font-bold text-studio-secondary">
+                ¿Seguro que deseas eliminar <span className="text-studio-text-title">{deleteTarget.name}</span> permanentemente?
+              </p>
+
+              <div className="mt-8 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  disabled={deleteLoading}
+                  onClick={() => setDeleteTarget(null)}
+                  className="px-4 py-3 rounded-xl border border-studio-border bg-white text-[10px] font-black uppercase tracking-widest text-studio-text-title hover:bg-studio-bg transition-all disabled:opacity-40"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={deleteLoading}
+                  onClick={confirmDelete}
+                  className="px-4 py-3 rounded-xl bg-red-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {deleteLoading ? <FiLoader className="animate-spin" /> : <FiTrash2 size={16} />}
+                  Eliminar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: 20 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, x: 20, transition: { duration: 0.2 } }}
+            className="fixed top-24 right-6 z-[200] w-full max-w-[320px] bg-white rounded-xl shadow-2xl border border-gray-100 flex items-center overflow-hidden"
+          >
+            <div className="w-1.5 h-16 bg-studio-primary shrink-0" />
+            <div className="flex items-center gap-3 p-4 flex-1">
+              <div className="bg-studio-primary/10 p-2 rounded-full shrink-0 text-studio-primary">
+                <FiCheck size={18} />
+              </div>
+              <div className="flex-1 pr-6">
+                <p className="font-bold text-studio-text-title text-sm leading-tight">{toastMeta.title}</p>
+                <p className="text-[10px] font-bold text-studio-secondary uppercase tracking-wider mt-0.5">{toastMeta.subtitle}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowToast(false)}
+              className="absolute top-2 right-2 p-1 hover:bg-studio-bg rounded-md transition-colors text-studio-secondary/40 hover:text-studio-secondary"
+            >
+              <FiX size={14} />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

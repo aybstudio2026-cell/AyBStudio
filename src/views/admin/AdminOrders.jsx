@@ -9,30 +9,75 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
-  const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const [totalCount, setTotalCount] = useState(0);
   
   // Estados para Filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  
 
   // Estados para Detalles de la Orden
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderItems, setOrderItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(false);
 
-  useEffect(() => { fetchAllOrders(); }, []);
-  useEffect(() => { applyFilters(); }, [searchTerm, startDate, endDate, orders]);
+  useEffect(() => { fetchOrdersPage(1, searchTerm, startDate, endDate); }, []);
 
-  async function fetchAllOrders() {
+  useEffect(() => {
+    fetchOrdersPage(page, searchTerm, startDate, endDate);
+  }, [page]);
+
+  useEffect(() => {
+    setPage(1);
+    fetchOrdersPage(1, searchTerm, startDate, endDate);
+  }, [searchTerm, startDate, endDate]);
+
+  async function fetchOrdersPage(nextPage, term, start, end) {
     setLoading(true);
     // Asumiendo que admin_orders_view es la vista que creamos en Supabase
-    const { data } = await supabase.from('admin_orders_view').select('*').order('created_at', { ascending: false });
-    if (data) {
-      setOrders(data);
-      setFilteredOrders(data);
+    const from = (nextPage - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const baseQuery = supabase
+      .from('admin_orders_view')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const countQuery = supabase
+      .from('admin_orders_view')
+      .select('id', { count: 'exact', head: true });
+
+    if (term) {
+      const safe = term.replaceAll(',', ' ');
+      const filter = `full_name.ilike.%${safe}%,username.ilike.%${safe}%,id.ilike.%${safe}%`;
+      baseQuery.or(filter);
+      countQuery.or(filter);
     }
+
+    if (start) {
+      baseQuery.gte('created_at', new Date(start).toISOString());
+      countQuery.gte('created_at', new Date(start).toISOString());
+    }
+
+    if (end) {
+      const endDateObj = new Date(end);
+      endDateObj.setHours(23, 59, 59, 999);
+      baseQuery.lte('created_at', endDateObj.toISOString());
+      countQuery.lte('created_at', endDateObj.toISOString());
+    }
+
+    const [pageResult, countResult] = await Promise.all([
+      baseQuery.range(from, to),
+      countQuery
+    ]);
+
+    if (pageResult.data) setOrders(pageResult.data);
+    setTotalCount(countResult.count || 0);
     setLoading(false);
   }
 
@@ -56,24 +101,7 @@ export default function AdminOrders() {
     setLoadingItems(false);
   }
 
-  const applyFilters = () => {
-    let result = [...orders];
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(o => 
-        o.full_name?.toLowerCase().includes(term) || 
-        o.username?.toLowerCase().includes(term) || 
-        o.id.includes(term)
-      );
-    }
-    if (startDate) result = result.filter(o => new Date(o.created_at) >= new Date(startDate));
-    if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      result = result.filter(o => new Date(o.created_at) <= end);
-    }
-    setFilteredOrders(result);
-  };
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   if (loading) return (
     <div className="p-40 text-center bg-studio-bg min-h-screen flex flex-col items-center justify-center gap-4">
@@ -140,7 +168,7 @@ export default function AdminOrders() {
               </tr>
             </thead>
             <tbody className="divide-y divide-studio-border">
-              {filteredOrders.map(order => (
+              {orders.map(order => (
                 <tr key={order.id} className="hover:bg-studio-bg transition-colors group">
                   <td className="p-8 flex items-center gap-5">
                     <div className="w-12 h-12 rounded-2xl bg-studio-bg border border-studio-border flex items-center justify-center font-black text-xs text-studio-primary shrink-0 overflow-hidden shadow-inner">
@@ -175,12 +203,36 @@ export default function AdminOrders() {
             </tbody>
           </table>
         </div>
-        {filteredOrders.length === 0 && (
+        {orders.length === 0 && (
           <div className="p-20 text-center space-y-4">
             <FiShoppingBag size={40} className="mx-auto text-studio-secondary/10" />
             <p className="text-[10px] font-black text-studio-secondary uppercase tracking-[0.4em] opacity-30">No se encontraron transacciones</p>
           </div>
         )}
+      </div>
+
+      <div className="flex items-center justify-between bg-white border border-studio-border rounded-2xl px-6 py-4 shadow-sm">
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-studio-secondary opacity-50">
+          Página {page} de {totalPages}
+        </p>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="px-4 py-2 rounded-xl border border-studio-border bg-white text-[9px] font-black uppercase tracking-widest text-studio-text-title disabled:opacity-30 hover:bg-studio-bg transition-all"
+          >
+            Anterior
+          </button>
+          <button
+            type="button"
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            className="px-4 py-2 rounded-xl border border-studio-border bg-white text-[9px] font-black uppercase tracking-widest text-studio-text-title disabled:opacity-30 hover:bg-studio-bg transition-all"
+          >
+            Siguiente
+          </button>
+        </div>
       </div>
 
       {/* MODAL DE DETALLES (ESTILO BOUTIQUE) */}

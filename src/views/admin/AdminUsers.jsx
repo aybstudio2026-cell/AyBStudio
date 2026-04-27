@@ -12,14 +12,49 @@ export default function AdminUsers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchUsers(); }, []);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const [totalCount, setTotalCount] = useState(0);
 
-  async function fetchUsers() {
-    const { data } = await supabase
+  useEffect(() => { fetchUsersPage(1, searchTerm); }, []);
+
+  useEffect(() => {
+    fetchUsersPage(page, searchTerm);
+  }, [page]);
+
+  useEffect(() => {
+    setPage(1);
+    fetchUsersPage(1, searchTerm);
+  }, [searchTerm]);
+
+  async function fetchUsersPage(nextPage, term) {
+    setLoading(true);
+    const from = (nextPage - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const baseQuery = supabase
       .from('profiles')
       .select('*')
       .order('updated_at', { ascending: false });
-    if (data) setUsers(data);
+
+    const countQuery = supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true });
+
+    if (term) {
+      const safe = term.replaceAll(',', ' ');
+      const filter = `username.ilike.%${safe}%,full_name.ilike.%${safe}%,email.ilike.%${safe}%`;
+      baseQuery.or(filter);
+      countQuery.or(filter);
+    }
+
+    const [pageResult, countResult] = await Promise.all([
+      baseQuery.range(from, to),
+      countQuery
+    ]);
+
+    if (pageResult.data) setUsers(pageResult.data);
+    setTotalCount(countResult.count || 0);
     setLoading(false);
   }
 
@@ -29,7 +64,7 @@ export default function AdminUsers() {
       .update({ status: newStatus })
       .eq('id', userId);
     
-    if (!error) fetchUsers();
+    if (!error) fetchUsersPage(page, searchTerm);
   }
 
   // Estilos de estado gélidos y profesionales
@@ -40,11 +75,7 @@ export default function AdminUsers() {
     bloqueado: 'bg-red-500/10 text-red-600 border-red-500/20'
   };
 
-  const filteredUsers = users.filter(u => 
-    u.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
     <div className="p-8 space-y-8 bg-studio-bg min-h-screen text-studio-text-title">
@@ -91,7 +122,7 @@ export default function AdminUsers() {
                   </tr>
                 ))
               ) : (
-                filteredUsers.map(u => (
+                users.map(u => (
                   <motion.tr 
                     layout
                     key={u.id} 
@@ -150,7 +181,7 @@ export default function AdminUsers() {
           </table>
         </div>
 
-        {filteredUsers.length === 0 && !loading && (
+        {users.length === 0 && !loading && (
           <div className="p-20 text-center space-y-4">
             <FiSearch size={40} className="mx-auto text-studio-secondary/10" />
             <p className="text-[10px] font-black text-studio-secondary uppercase tracking-[0.4em] opacity-30">
@@ -158,6 +189,30 @@ export default function AdminUsers() {
             </p>
           </div>
         )}
+      </div>
+
+      <div className="flex items-center justify-between bg-white border border-studio-border rounded-2xl px-6 py-4 shadow-sm">
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-studio-secondary opacity-50">
+          Página {page} de {totalPages}
+        </p>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="px-4 py-2 rounded-xl border border-studio-border bg-white text-[9px] font-black uppercase tracking-widest text-studio-text-title disabled:opacity-30 hover:bg-studio-bg transition-all"
+          >
+            Anterior
+          </button>
+          <button
+            type="button"
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            className="px-4 py-2 rounded-xl border border-studio-border bg-white text-[9px] font-black uppercase tracking-widest text-studio-text-title disabled:opacity-30 hover:bg-studio-bg transition-all"
+          >
+            Siguiente
+          </button>
+        </div>
       </div>
     </div>
   );

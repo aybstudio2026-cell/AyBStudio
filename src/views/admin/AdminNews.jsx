@@ -10,11 +10,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function AdminNews() {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const [totalCount, setTotalCount] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMeta, setToastMeta] = useState({ title: '', subtitle: '' });
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -25,15 +32,28 @@ export default function AdminNews() {
     state: true
   });
 
-  useEffect(() => { fetchNews(); }, []);
+  useEffect(() => { fetchNewsPage(1); }, []);
 
-  async function fetchNews() {
+  useEffect(() => {
+    fetchNewsPage(page);
+  }, [page]);
+
+  async function fetchNewsPage(nextPage) {
     setLoading(true);
-    const { data } = await supabase
-      .from('news')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (data) setNews(data);
+    const from = (nextPage - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const [pageResult, countResult] = await Promise.all([
+      supabase
+        .from('news')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to),
+      supabase.from('news').select('id', { count: 'exact', head: true })
+    ]);
+
+    if (pageResult.data) setNews(pageResult.data);
+    setTotalCount(countResult.count || 0);
     setLoading(false);
   }
 
@@ -91,27 +111,55 @@ export default function AdminNews() {
     e.preventDefault();
     if (!formData.image_url) {
       alert('Debes subir una imagen');
+
       return;
     }
     setSaving(true);
+
+    const isEditing = Boolean(formData.id);
     const { error } = await supabase.from('news').upsert(formData);
     if (error) {
       alert('Error: ' + error.message);
     } else {
       setIsModalOpen(false);
-      fetchNews();
+      fetchNewsPage(page);
+      setToastMeta({
+        title: isEditing ? 'Noticia actualizada' : 'Noticia creada',
+        subtitle: isEditing ? 'Cambios guardados correctamente' : 'Publicación registrada'
+      });
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 4500);
     }
     setSaving(false);
   }
 
-  async function handleDelete(id, imageUrl) {
-    if (!window.confirm('¿Eliminar esta noticia?')) return;
-    if (imageUrl?.includes('supabase')) {
-      const fileName = imageUrl.split('/').pop();
-      await supabase.storage.from('news').remove([fileName]);
+  async function confirmDelete() {
+    if (!deleteTarget || deleteLoading) return;
+    setDeleteLoading(true);
+
+    try {
+      if (deleteTarget.image_url?.includes('supabase')) {
+        const fileName = deleteTarget.image_url.split('/').pop();
+        await supabase.storage.from('news').remove([fileName]);
+      }
+
+      const { error } = await supabase.from('news').delete().eq('id', deleteTarget.id);
+      if (error) throw error;
+
+      const nextTotal = Math.max(0, totalCount - 1);
+      const lastPage = Math.max(1, Math.ceil(nextTotal / pageSize));
+      const nextPage = Math.min(page, lastPage);
+      setPage(nextPage);
+      fetchNewsPage(nextPage);
+      setToastMeta({ title: 'Noticia eliminada', subtitle: 'Se removió del feed' });
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 4500);
+    } catch (error) {
+      alert('Error al eliminar: ' + error.message);
+    } finally {
+      setDeleteLoading(false);
+      setDeleteTarget(null);
     }
-    await supabase.from('news').delete().eq('id', id);
-    fetchNews();
   }
 
   if (loading) return (
@@ -120,6 +168,8 @@ export default function AdminNews() {
       <p className="text-[10px] font-black uppercase tracking-[0.4em] text-studio-secondary animate-pulse italic">Sincronizando Noticias...</p>
     </div>
   );
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
     <div className="p-8 space-y-8 bg-studio-bg min-h-screen text-studio-text-title font-sans">
@@ -193,7 +243,7 @@ export default function AdminNews() {
                       <FiEdit2 size={16} />
                     </button>
                     <button
-                      onClick={() => handleDelete(item.id, item.image_url)}
+                      onClick={() => setDeleteTarget(item)}
                       className="p-3 bg-red-50 rounded-xl text-red-400 hover:text-red-500 hover:bg-red-100 transition-all shadow-sm"
                     >
                       <FiTrash2 size={16} />
@@ -204,6 +254,30 @@ export default function AdminNews() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex items-center justify-between bg-white border border-studio-border rounded-2xl px-6 py-4 shadow-sm">
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-studio-secondary opacity-50">
+          Página {page} de {totalPages}
+        </p>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="px-4 py-2 rounded-xl border border-studio-border bg-white text-[9px] font-black uppercase tracking-widest text-studio-text-title disabled:opacity-30 hover:bg-studio-bg transition-all"
+          >
+            Anterior
+          </button>
+          <button
+            type="button"
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            className="px-4 py-2 rounded-xl border border-studio-border bg-white text-[9px] font-black uppercase tracking-widest text-studio-text-title disabled:opacity-30 hover:bg-studio-bg transition-all"
+          >
+            Siguiente
+          </button>
+        </div>
       </div>
 
       {/* MODAL EDITORIAL */}
@@ -227,7 +301,7 @@ export default function AdminNews() {
                     {formData.id ? 'Editar Noticia' : 'Nueva Noticia'}
                   </h2>
                 </div>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="w-12 h-12 flex items-center justify-center bg-studio-bg rounded-2xl text-studio-secondary/40 hover:text-studio-primary transition-all">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="w-12 h-12 flex items-center justify-center bg-studio-bg rounded-2xl text-studio-secondary/40 hover:text-studio-primary transition-all shadow-sm">
                   <FiX size={24} />
                 </button>
               </div>
@@ -329,6 +403,93 @@ export default function AdminNews() {
               </button>
             </motion.form>
           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {deleteTarget && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !deleteLoading && setDeleteTarget(null)}
+              className="absolute inset-0 bg-studio-text-title/40 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              className="relative w-full max-w-md bg-white rounded-[2rem] border border-studio-border shadow-2xl p-8"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-studio-secondary opacity-60">Confirmación</p>
+                  <h3 className="text-xl font-black uppercase italic tracking-tighter text-studio-text-title mt-1">Eliminar noticia</h3>
+                </div>
+                <button
+                  type="button"
+                  disabled={deleteLoading}
+                  onClick={() => setDeleteTarget(null)}
+                  className="w-10 h-10 flex items-center justify-center bg-studio-bg rounded-xl text-studio-secondary hover:text-studio-primary transition-all disabled:opacity-40"
+                >
+                  <FiX size={18} />
+                </button>
+              </div>
+
+              <p className="mt-4 text-[12px] font-bold text-studio-secondary">
+                ¿Seguro que deseas eliminar <span className="text-studio-text-title">{deleteTarget.title}</span>?
+              </p>
+
+              <div className="mt-8 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  disabled={deleteLoading}
+                  onClick={() => setDeleteTarget(null)}
+                  className="px-4 py-3 rounded-xl border border-studio-border bg-white text-[10px] font-black uppercase tracking-widest text-studio-text-title hover:bg-studio-bg transition-all disabled:opacity-40"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={deleteLoading}
+                  onClick={confirmDelete}
+                  className="px-4 py-3 rounded-xl bg-red-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {deleteLoading ? <FiLoader className="animate-spin" /> : <FiTrash2 size={16} />}
+                  Eliminar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: 20 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, x: 20, transition: { duration: 0.2 } }}
+            className="fixed top-24 right-6 z-[200] w-full max-w-[320px] bg-white rounded-xl shadow-2xl border border-gray-100 flex items-center overflow-hidden"
+          >
+            <div className="w-1.5 h-16 bg-studio-primary shrink-0" />
+            <div className="flex items-center gap-3 p-4 flex-1">
+              <div className="bg-studio-primary/10 p-2 rounded-full shrink-0 text-studio-primary">
+                <FiCheck size={18} />
+              </div>
+              <div className="flex-1 pr-6">
+                <p className="font-bold text-studio-text-title text-sm leading-tight">{toastMeta.title}</p>
+                <p className="text-[10px] font-bold text-studio-secondary uppercase tracking-wider mt-0.5">{toastMeta.subtitle}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowToast(false)}
+              className="absolute top-2 right-2 p-1 hover:bg-studio-bg rounded-md transition-colors text-studio-secondary/40 hover:text-studio-secondary"
+            >
+              <FiX size={14} />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
