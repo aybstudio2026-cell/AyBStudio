@@ -38,7 +38,7 @@ export default function NewsCarousel() {
   if (news.length === 0) return null;
 
   return (
-    <section className="relative w-full h-[600px] overflow-hidden bg-white pt-10">
+    <section className="relative w-full h-[600px] overflow-hidden bg-transparent pt-10">
       <AnimatePresence mode="wait">
         <motion.div
           key={news[index].id}

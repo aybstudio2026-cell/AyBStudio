@@ -1,23 +1,26 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiExternalLink, FiPlus, FiHeart, FiCheck, FiPackage, FiZap } from 'react-icons/fi'; 
+import { FiPlus, FiHeart, FiPackage, FiZap, FiCheckCircle } from 'react-icons/fi'; 
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { supabase } from '../../supabaseClient';
 
 export default function ProductCard({ product }) {
-  const { addToCart } = useCart();
+  // 1. Extraemos 'cart' para verificar existencia
+  const { addToCart, cart } = useCart();
   
-  // Estados simples y directos
   const [isFavorite, setIsFavorite] = useState(false);
   const [hasPurchased, setHasPurchased] = useState(false);
+
+  // 2. Identificamos si es descargable y si ya está en el carrito
+  const isDownloadable = product.product_types?.name?.toLowerCase().includes('descargable');
+  const isInCart = cart.some(item => item.id === product.id);
 
   useEffect(() => {
     async function initProduct() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 1. Cargar Favorito
       const { data: fav } = await supabase
         .from('wishlist')
         .select('*')
@@ -27,8 +30,6 @@ export default function ProductCard({ product }) {
 
       if (fav) setIsFavorite(true);
 
-      // 2. Cargar Propiedad
-      const isDownloadable = product.product_types?.name?.toLowerCase().includes('descargable');
       if (isDownloadable) {
         const { data: order } = await supabase
           .from('order_items')
@@ -43,9 +44,8 @@ export default function ProductCard({ product }) {
     }
 
     initProduct();
-  }, [product.id]);
+  }, [product.id, isDownloadable]);
 
-  // Función de Favoritos igual a la tuya (la que funciona)
   async function toggleFavorite(e) {
     e.preventDefault();
     const { data: { user } } = await supabase.auth.getUser();
@@ -73,14 +73,12 @@ export default function ProductCard({ product }) {
           />
         </Link>
 
-        {/* ETIQUETA PRECIO */}
         {!hasPurchased && (
           <div className="absolute top-0 right-0 z-20">
             <div className="bg-gradient-to-br from-studio-primary to-studio-text-title text-white px-5 py-2.5 rounded-bl-[1.5rem] shadow-md flex flex-col items-center">
               <span className="text-sm font-black">${product.price}</span>
             </div>
             
-            {/* CORAZÓN CON ESTILO FORZADO */}
             <div className="flex justify-end p-3">
               <button 
                 onClick={toggleFavorite}
@@ -99,7 +97,6 @@ export default function ProductCard({ product }) {
           </div>
         )}
 
-        {/* WATERMARK A&B */}
         <div className="absolute bottom-5 right-6 opacity-20 pointer-events-none select-none italic font-black text-xl text-studio-text-title scale-75 origin-bottom-right">
           A<span className="text-studio-primary">&</span>B <span className="text-[8px] uppercase tracking-[0.3em] font-bold not-italic">Studio</span>
         </div>
@@ -121,9 +118,24 @@ export default function ProductCard({ product }) {
               <Link to={`/producto/${product.id}`} className="flex-[2.5] bg-studio-bg text-studio-text-title font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest flex items-center justify-center">
                 Detalles
               </Link>
-              <button onClick={() => addToCart(product)} className="flex-1 bg-studio-text-title text-white py-4 rounded-2xl flex items-center justify-center hover:bg-studio-primary shadow-md">
-                <FiPlus size={22} />
-              </button>
+              
+              {/* LÓGICA DE BOTÓN DE CARRITO */}
+              {isDownloadable && isInCart ? (
+                <button 
+                  disabled 
+                  className="flex-1 bg-gray-100 text-studio-secondary/40 py-4 rounded-2xl flex items-center justify-center cursor-not-allowed"
+                  title="Ya en el carrito"
+                >
+                  <FiCheckCircle size={22} />
+                </button>
+              ) : (
+                <button 
+                  onClick={() => addToCart(product)} 
+                  className="flex-1 bg-studio-text-title text-white py-4 rounded-2xl flex items-center justify-center hover:bg-studio-primary shadow-md transition-all active:scale-95"
+                >
+                  <FiPlus size={22} />
+                </button>
+              )}
             </>
           )}
         </div>

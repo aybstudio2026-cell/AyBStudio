@@ -10,7 +10,7 @@ const features = [
   { 
     icon: FiZap, 
     title: "Digital Assets", 
-    desc: "Recursos visuales de alta gama y estética kawaii para creadores que cuidan cada detalle." 
+    desc: "Recursos visuales de alta gama y de gran estética para creadores que cuidan cada detalle." 
   },
   { 
     icon: FiCode, 
@@ -21,7 +21,7 @@ const features = [
 
 export default function Features() {
   return (
-    <section className="py-15 bg-white">
+    <section className="py-15 bg-transparent">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {features.map((f, i) => (
