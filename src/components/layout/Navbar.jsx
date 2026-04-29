@@ -1,11 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { FiSearch, FiShoppingCart, FiUser, FiX, FiLogOut, FiSettings, FiDownload, FiHeart } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from "../../supabaseClient";
 import AuthModal from '../auth/AuthModal';
 import CartSidebar from '../cart/CartSidebar';
 import { useCart } from '../../context/CartContext';
+
+const NAV_LINKS = [
+  { to: '/',       label: 'Home'  },
+  { to: '/tienda', label: 'Store' },
+  { to: '/tools',  label: 'Tools' },
+];
 
 export default function Navbar() {
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -19,6 +25,7 @@ export default function Navbar() {
   const menuRef = useRef(null);
   const { cartCount } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Lógica de Autenticación y Perfil
   useEffect(() => {
@@ -86,12 +93,13 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* --- BUSCADOR CON DROP-DOWN --- */}
+          {/* --- CENTRO: NAV LINKS o BUSCADOR --- */}
           <div className="flex-1 flex justify-center px-10 relative">
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
+
+              {/* BUSCADOR */}
               {isSearchOpen && (
                 <div className="w-full max-w-lg relative">
-                  {/* Contenedor del Input (Estilo Flat) */}
                   <motion.div 
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -151,101 +159,130 @@ export default function Navbar() {
                   </AnimatePresence>
                 </div>
               )}
+
+              {/* NAV LINKS — se ocultan cuando el buscador está abierto */}
+              {!isSearchOpen && (
+                <motion.div
+                  key="nav-links"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex items-center gap-1"
+                >
+                  {NAV_LINKS.map(({ to, label }) => {
+                    const isActive = location.pathname === to;
+                    return (
+                      <Link
+                        key={to}
+                        to={to}
+                        className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-200
+                          ${isActive
+                            ? 'bg-studio-primary/10 text-studio-primary'
+                            : 'text-studio-secondary/60 hover:text-studio-text-title hover:bg-studio-bg'
+                          }`}
+                      >
+                        {label}
+                      </Link>
+                    );
+                  })}
+                </motion.div>
+              )}
+
             </AnimatePresence>
           </div>
 
           {/* --- ICONOS DERECHA --- */}
-<div className="flex gap-4 items-center shrink-0">
+          <div className="flex gap-4 items-center shrink-0">
   
-  {/* BUSCADOR (Solo si no está abierto) */}
-  {!isSearchOpen && (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      onClick={() => setIsSearchOpen(true)}
-      className="p-2.5 hover:bg-studio-bg rounded-xl transition-colors cursor-pointer text-studio-text-title"
-    >
-      <FiSearch size={22} />
-    </motion.div>
-  )}
-
-  {/* CARRITO */}
-  <div 
-    onClick={() => setIsCartOpen(true)} 
-    className="relative p-2.5 hover:bg-studio-bg rounded-xl cursor-pointer text-studio-text-title"
-  >
-    <FiShoppingCart size={22} />
-    {cartCount > 0 && (
-      <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] bg-studio-primary text-white text-[10px] flex items-center justify-center rounded-full font-bold px-1">
-        {cartCount}
-      </span>
-    )}
-  </div>
-
-  {/* BOTÓN USUARIO (LOGGED OUT) */}
-  {!user ? (
-    <button 
-      onClick={() => setIsAuthOpen(true)} 
-      className="w-10 h-10 rounded-xl bg-studio-bg border border-studio-border text-studio-text-title flex items-center justify-center hover:bg-studio-primary/10 hover:text-studio-primary hover:border-studio-primary/30 transition-all"
-    >
-      <FiUser size={20} />
-    </button>
-  ) : (
-    /* BOTÓN USUARIO (LOGGED IN) */
-    <div className="relative" ref={menuRef}>
-      <button 
-        onClick={() => setIsMenuOpen(!isMenuOpen)} 
-        className="w-10 h-10 rounded-xl bg-studio-surface border-2 border-studio-border hover:border-studio-primary transition-all flex items-center justify-center overflow-hidden"
-      >
-        {profile?.avatar_url ? (
-          <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
-        ) : (
-          <div className="w-full h-full bg-studio-primary text-white flex items-center justify-center font-bold text-sm">
-            {user.email[0].toUpperCase()}
-          </div>
-        )}
-      </button>
-
-      {/* MENÚ DESPLEGABLE */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0, y: 10 }} 
-            className="absolute right-0 mt-3 w-52 bg-studio-surface rounded-xl shadow-flat border border-studio-border py-2 z-50"
-          >
-            {/* Links del Menú */}
-            {[
-              { to: "/cuenta", icon: <FiSettings />, label: "Mi Cuenta" },
-              { to: "/pedidos", icon: <FiShoppingCart />, label: "Pedidos" },
-              { to: "/favoritos", icon: <FiHeart />, label: "Favoritos" },
-              { to: "/inventario", icon: <FiDownload />, label: "Inventario" },
-            ].map((item) => (
-              <Link 
-                key={item.to}
-                to={item.to} 
-                onClick={() => setIsMenuOpen(false)} 
-                className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-studio-text-body hover:bg-studio-primary/10 hover:text-studio-primary transition-all"
+            {/* BUSCADOR (Solo si no está abierto) */}
+            {!isSearchOpen && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onClick={() => setIsSearchOpen(true)}
+                className="p-2.5 hover:bg-studio-bg rounded-xl transition-colors cursor-pointer text-studio-text-title"
               >
-                <span className="text-lg">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
+                <FiSearch size={22} />
+              </motion.div>
+            )}
 
-            {/* Botón Cerrar Sesión */}
-            <button 
-              onClick={handleLogout} 
-              className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-50 border-t border-studio-border transition-colors mt-1"
+            {/* CARRITO */}
+            <div 
+              onClick={() => setIsCartOpen(true)} 
+              className="relative p-2.5 hover:bg-studio-bg rounded-xl cursor-pointer text-studio-text-title"
             >
-              <FiLogOut className="text-lg" /> Cerrar Sesión
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )}
-</div>
+              <FiShoppingCart size={22} />
+              {cartCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] bg-studio-primary text-white text-[10px] flex items-center justify-center rounded-full font-bold px-1">
+                  {cartCount}
+                </span>
+              )}
+            </div>
+
+            {/* BOTÓN USUARIO (LOGGED OUT) */}
+            {!user ? (
+              <button 
+                onClick={() => setIsAuthOpen(true)} 
+                className="w-10 h-10 rounded-xl bg-studio-bg border border-studio-border text-studio-text-title flex items-center justify-center hover:bg-studio-primary/10 hover:text-studio-primary hover:border-studio-primary/30 transition-all"
+              >
+                <FiUser size={20} />
+              </button>
+            ) : (
+              /* BOTÓN USUARIO (LOGGED IN) */
+              <div className="relative" ref={menuRef}>
+                <button 
+                  onClick={() => setIsMenuOpen(!isMenuOpen)} 
+                  className="w-10 h-10 rounded-xl bg-studio-surface border-2 border-studio-border hover:border-studio-primary transition-all flex items-center justify-center overflow-hidden"
+                >
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
+                  ) : (
+                    <div className="w-full h-full bg-studio-primary text-white flex items-center justify-center font-bold text-sm">
+                      {user.email[0].toUpperCase()}
+                    </div>
+                  )}
+                </button>
+
+                {/* MENÚ DESPLEGABLE */}
+                <AnimatePresence>
+                  {isMenuOpen && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      exit={{ opacity: 0, y: 10 }} 
+                      className="absolute right-0 mt-3 w-52 bg-studio-surface rounded-xl shadow-flat border border-studio-border py-2 z-50"
+                    >
+                      {[
+                        { to: "/cuenta",     icon: <FiSettings />,     label: "Mi Cuenta"  },
+                        { to: "/pedidos",    icon: <FiShoppingCart />, label: "Pedidos"    },
+                        { to: "/favoritos",  icon: <FiHeart />,        label: "Favoritos"  },
+                        { to: "/inventario", icon: <FiDownload />,     label: "Inventario" },
+                      ].map((item) => (
+                        <Link 
+                          key={item.to}
+                          to={item.to} 
+                          onClick={() => setIsMenuOpen(false)} 
+                          className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-studio-text-body hover:bg-studio-primary/10 hover:text-studio-primary transition-all"
+                        >
+                          <span className="text-lg">{item.icon}</span>
+                          {item.label}
+                        </Link>
+                      ))}
+
+                      <button 
+                        onClick={handleLogout} 
+                        className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-50 border-t border-studio-border transition-colors mt-1"
+                      >
+                        <FiLogOut className="text-lg" /> Cerrar Sesión
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+          </div>
+
         </div>
       </nav>
       
