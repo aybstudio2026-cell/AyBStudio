@@ -20,6 +20,8 @@ import AdminNews from './views/admin/AdminNews';
 import AdminUsers from './views/admin/AdminUsers';
 import AdminOrders from './views/admin/AdminOrders';
 import AdminReviews from './views/admin/AdminReviews';
+import AdminCategories from './views/admin/AdminCategories';
+
 // Tools
 import ToolsCatalog from './views/tools/ToolsCatalog';
 import ImageConverter from './views/tools/ImageConverter';
@@ -92,6 +94,7 @@ function AppContent() {
             <Route path="usuarios" element={<AdminUsers />} />
             <Route path="ordenes" element={<AdminOrders />} />
             <Route path="reseñas" element={<AdminReviews />} />
+            <Route path="categorias" element={<AdminCategories />} />
           </Route>
           
         </Routes>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiSearch, FiShoppingCart, FiUser, FiX, FiLogOut, FiSettings, FiDownload, FiHeart } from 'react-icons/fi';
+import { FiSearch, FiShoppingCart, FiUser, FiX, FiLogOut, FiSettings, FiDownload, FiHeart, FiZap } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from "../../supabaseClient";
@@ -30,7 +30,7 @@ export default function Navbar() {
   // Lógica de Autenticación y Perfil
   useEffect(() => {
     const getProfile = async (userId) => {
-      const { data } = await supabase.from('profiles').select('avatar_url, username').eq('id', userId).single();
+      const { data } = await supabase.from('profiles').select('avatar_url, username, balance').eq('id', userId).single();
       setProfile(data);
     };
 
@@ -194,7 +194,6 @@ export default function Navbar() {
 
           {/* --- ICONOS DERECHA --- */}
           <div className="flex gap-4 items-center shrink-0">
-  
             {/* BUSCADOR (Solo si no está abierto) */}
             {!isSearchOpen && (
               <motion.div 
@@ -206,7 +205,7 @@ export default function Navbar() {
                 <FiSearch size={22} />
               </motion.div>
             )}
-
+            
             {/* CARRITO */}
             <div 
               onClick={() => setIsCartOpen(true)} 
@@ -219,6 +218,8 @@ export default function Navbar() {
                 </span>
               )}
             </div>
+            
+            
 
             {/* BOTÓN USUARIO (LOGGED OUT) */}
             {!user ? (
@@ -253,6 +254,16 @@ export default function Navbar() {
                       exit={{ opacity: 0, y: 10 }} 
                       className="absolute right-0 mt-3 w-52 bg-studio-surface rounded-xl shadow-flat border border-studio-border py-2 z-50"
                     >
+                      {/* HEADER DEL MENÚ: Balance visual rápido */}
+                      <div className="px-4 py-3 mb-2 border-b border-studio-border bg-studio-bg/30">
+                        <p className="text-[8px] font-black text-studio-secondary uppercase tracking-[0.2em]">Billetera Actual</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <FiZap className="text-studio-primary" size={14} />
+                          <span className="text-sm font-black text-studio-text-title tracking-tighter">
+                            {profile?.balance || 0} <span className="text-studio-primary">A&BCoins</span>
+                          </span>
+                        </div>
+                      </div>
                       {[
                         { to: "/cuenta",     icon: <FiSettings />,     label: "Mi Cuenta"  },
                         { to: "/pedidos",    icon: <FiShoppingCart />, label: "Pedidos"    },
@@ -281,6 +292,8 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
             )}
+
+            
           </div>
 
         </div>

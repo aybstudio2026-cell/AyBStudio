@@ -4,13 +4,14 @@ import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../supabaseClient';
 import {
   FiGrid, FiPackage, FiUsers, FiShoppingBag,
-  FiRadio, FiLogOut, FiMenu, FiX, FiChevronRight, FiStar, FiShield
+  FiRadio, FiLogOut, FiMenu, FiX, FiChevronRight, FiStar, FiShield, FiTag
 } from 'react-icons/fi';
 
 const navItems = [
   { path: '/admin', label: 'Dashboard', icon: FiGrid, exact: true },
   { path: '/admin/usuarios', label: 'Usuarios', icon: FiUsers },
   { path: '/admin/productos', label: 'Productos', icon: FiPackage },
+  { path: '/admin/categorias', label: 'Categorías', icon: FiTag },
   { path: '/admin/noticias', label: 'Noticias', icon: FiRadio },
   { path: '/admin/ordenes', label: 'Órdenes', icon: FiShoppingBag },
   { path: '/admin/reseñas', label: 'Reseñas', icon: FiStar },
