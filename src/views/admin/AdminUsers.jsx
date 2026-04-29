@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { 
   FiUser, FiSearch, FiShield, FiMoreHorizontal, 
-  FiCheckCircle, FiAlertCircle, FiSlash, FiMinusCircle 
+  FiCheckCircle, FiAlertCircle, FiSlash, FiMinusCircle, FiZap 
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -110,6 +110,7 @@ export default function AdminUsers() {
               <tr className="text-[9px] uppercase tracking-[0.3em] text-studio-secondary font-black opacity-50">
                 <th className="p-8">Perfil / Identidad</th>
                 <th className="p-8">Rol de Sistema</th>
+                <th className="p-8">Balance</th>
                 <th className="p-8">Estado Actual</th>
                 <th className="p-8 text-right">Modificar Acceso</th>
               </tr>
@@ -118,7 +119,7 @@ export default function AdminUsers() {
               {loading ? (
                 [1,2,3].map(i => (
                   <tr key={i} className="animate-pulse">
-                    <td colSpan="4" className="p-8 h-20 bg-gray-50/30" />
+                    <td colSpan="5" className="p-8 h-20 bg-gray-50/30" />
                   </tr>
                 ))
               ) : (
@@ -149,6 +150,18 @@ export default function AdminUsers() {
                         <FiShield className={u.role === 'admin' ? 'text-studio-primary' : 'text-studio-secondary/30'} size={14} />
                         <span className={`text-[10px] font-black uppercase tracking-widest ${u.role === 'admin' ? 'text-studio-primary' : 'text-studio-secondary/60'}`}>
                           {u.role}
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className="p-8">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-studio-bg border border-studio-border">
+                        <FiZap className="text-studio-primary" size={13} />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-studio-text-title">
+                          {u.balance || 0}
+                        </span>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-studio-secondary/40">
+                          Coins
                         </span>
                       </div>
                     </td>

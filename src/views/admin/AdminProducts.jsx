@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { 
   FiPlus, FiEdit2, FiTrash2, FiImage, FiX, 
-  FiCheck, FiLoader, FiDollarSign, FiLink, FiKey, FiHash, FiChevronDown 
+  FiCheck, FiLoader, FiDollarSign, FiLink, FiKey, FiHash, FiChevronDown, FiZap 
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -30,6 +30,8 @@ export default function AdminProducts() {
     name: '',
     description: '',
     price: 0,
+    price_coins: 0,
+    coin_value: 0,
     category_id: '',
     type_id: '',
     image_url: '',
@@ -89,6 +91,8 @@ export default function AdminProducts() {
         name: '',
         description: '',
         price: 0,
+        price_coins: 0,
+        coin_value: 0,
         category_id: categories[0]?.id || '',
         type_id: types[0]?.id || '',
         image_url: '',
@@ -198,6 +202,16 @@ export default function AdminProducts() {
   );
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  const selectedTypeName = (() => {
+    const nameFromTypes = types.find((t) => t.id === formData.type_id)?.name;
+    const nameFromProduct = formData?.product_types?.name;
+    return (nameFromTypes || nameFromProduct || '').toLowerCase();
+  })();
+
+  const isCoinType = selectedTypeName === 'coin';
+  const isDownloadableType = selectedTypeName === 'descargable';
+  const isConsumibleType = selectedTypeName === 'consumible';
 
   return (
     <div className="p-8 space-y-8 bg-studio-bg min-h-screen text-studio-text-title">
@@ -355,7 +369,27 @@ export default function AdminProducts() {
                   <div className="relative">
                     <select 
                       value={formData.type_id}
-                      onChange={(e) => setFormData({...formData, type_id: e.target.value})}
+                      onChange={(e) => {
+                        const nextTypeId = e.target.value;
+                        const nextTypeName = (types.find((t) => t.id === nextTypeId)?.name || '').toLowerCase();
+
+                        setFormData((prev) => {
+                          const next = { ...prev, type_id: nextTypeId };
+                          if (nextTypeName === 'coin') {
+                            next.download_url = '';
+                            next.secret_key = '';
+                          } else if (nextTypeName === 'descargable') {
+                            next.price_coins = 0;
+                            next.coin_value = 0;
+                            next.secret_key = '';
+                          } else if (nextTypeName === 'consumible') {
+                            next.price_coins = 0;
+                            next.coin_value = 0;
+                            next.download_url = '';
+                          }
+                          return next;
+                        });
+                      }}
                       className="w-full bg-studio-bg border border-studio-border rounded-xl p-3.5 text-[13px] font-bold text-studio-text-title outline-none focus:border-studio-primary appearance-none"
                     >
                       {types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -378,6 +412,72 @@ export default function AdminProducts() {
                     />
                   </div>
                 </div>
+
+                {isCoinType && (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black uppercase text-studio-secondary tracking-widest ml-1">Precio (Coins)</label>
+                      <div className="relative">
+                        <FiZap className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-primary" />
+                        <input 
+                          type="number" 
+                          step="1" 
+                          min="0" 
+                          value={formData.price_coins || 0}
+                          onChange={(e) => setFormData({ ...formData, price_coins: e.target.value })}
+                          className="w-full bg-studio-bg border border-studio-border rounded-xl p-3.5 pl-10 text-[13px] font-bold text-studio-text-title outline-none focus:border-studio-primary transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black uppercase text-studio-secondary tracking-widest ml-1">Coin Value (A&BCoins)</label>
+                      <div className="relative">
+                        <FiZap className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-primary opacity-40" />
+                        <input 
+                          type="number" 
+                          step="1" 
+                          min="0" 
+                          value={formData.coin_value || 0}
+                          onChange={(e) => setFormData({ ...formData, coin_value: e.target.value })}
+                          className="w-full bg-studio-bg border border-studio-border rounded-xl p-3.5 pl-10 text-[13px] font-bold text-studio-text-title outline-none focus:border-studio-primary transition-all"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {isDownloadableType && (
+                  <div className="md:col-span-2 space-y-1.5">
+                    <label className="text-[9px] font-black uppercase text-studio-secondary tracking-widest ml-1">Download URL</label>
+                    <div className="relative">
+                      <FiLink className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-primary opacity-40" />
+                      <input 
+                        type="text" 
+                        value={formData.download_url}
+                        onChange={(e) => setFormData({...formData, download_url: e.target.value})}
+                        placeholder="https://..."
+                        className="w-full bg-studio-bg border border-studio-border rounded-xl p-3.5 pl-10 text-[11px] text-studio-text-title outline-none focus:border-studio-primary transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {isConsumibleType && (
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black uppercase text-studio-secondary tracking-widest ml-1">Secret Key</label>
+                    <div className="relative">
+                      <FiKey className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-primary opacity-40" />
+                      <input 
+                        type="text" 
+                        value={formData.secret_key}
+                        onChange={(e) => setFormData({...formData, secret_key: e.target.value})}
+                        placeholder="KEY-..."
+                        className="w-full bg-studio-bg border border-studio-border rounded-xl p-3.5 pl-10 text-[11px] font-mono text-studio-text-title outline-none focus:border-studio-primary transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* URL Imagen (Full width) */}
                 <div className="md:col-span-3 space-y-2">
@@ -410,36 +510,6 @@ export default function AdminProducts() {
                         <p className="text-studio-text-title font-black text-[10px] uppercase tracking-widest">Uploading...</p>
                       </div>
                     )}
-                  </div>
-                </div>
-
-                {/* URL Descarga */}
-                <div className="md:col-span-2 space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-studio-secondary tracking-widest ml-1">URL de Descarga Directa</label>
-                  <div className="relative">
-                    <FiLink className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-primary opacity-40" />
-                    <input 
-                      type="text" 
-                      value={formData.download_url}
-                      onChange={(e) => setFormData({...formData, download_url: e.target.value})}
-                      placeholder="https://drive.google.com/..."
-                      className="w-full bg-studio-bg border border-studio-border rounded-xl p-3.5 pl-10 text-[11px] text-studio-text-title outline-none focus:border-studio-primary transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Secret Key */}
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-black uppercase text-studio-secondary tracking-widest ml-1">Secret Key / License</label>
-                  <div className="relative">
-                    <FiKey className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-primary opacity-40" />
-                    <input 
-                      type="text" 
-                      value={formData.secret_key}
-                      onChange={(e) => setFormData({...formData, secret_key: e.target.value})}
-                      placeholder="KEY-..."
-                      className="w-full bg-studio-bg border border-studio-border rounded-xl p-3.5 pl-10 text-[11px] font-mono text-studio-text-title outline-none focus:border-studio-primary transition-all"
-                    />
                   </div>
                 </div>
 

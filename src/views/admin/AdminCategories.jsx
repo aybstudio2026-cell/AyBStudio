@@ -166,8 +166,8 @@ const ItemTable = ({ items, loading, onEdit, onDelete }) => (
     <table className="w-full text-left">
       <thead className="bg-gray-50/50 border-b border-studio-border">
         <tr className="text-[9px] uppercase tracking-[0.3em] text-studio-secondary font-black opacity-50">
-          <th className="p-6 pl-8">Nombre</th>
           <th className="p-6">ID</th>
+          <th className="p-6 pl-8">Nombre</th>
           <th className="p-6 text-right pr-8">Acciones</th>
         </tr>
       </thead>
@@ -189,16 +189,17 @@ const ItemTable = ({ items, loading, onEdit, onDelete }) => (
         ) : (
           items.map(item => (
             <motion.tr layout key={item.id} className="hover:bg-studio-bg transition-colors group">
-              <td className="p-6 pl-8">
-                <span className="font-black text-sm text-studio-text-title uppercase tracking-tight">
-                  {item.name}
-                </span>
-              </td>
               <td className="p-6">
                 <span className="text-[9px] font-mono text-studio-secondary opacity-40">
                   #{item.id}
                 </span>
               </td>
+              <td className="p-6 pl-8">
+                <span className="font-black text-sm text-studio-text-title uppercase tracking-tight">
+                  {item.name}
+                </span>
+              </td>
+              
               <td className="p-6 pr-8 text-right">
                 <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button

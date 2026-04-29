@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
-import { FiUser, FiShoppingBag, FiHeart, FiDownload, FiLock } from 'react-icons/fi';
+import { FiUser, FiShoppingBag, FiHeart, FiDownload } from 'react-icons/fi';
+import { Wallet } from 'lucide-react';
 
 export default function UserSidebar() {
   const sidebarLinks = [
@@ -7,6 +8,7 @@ export default function UserSidebar() {
     { to: "/pedidos", label: "Pedidos", icon: FiShoppingBag },
     { to: "/favoritos", label: "Favoritos", icon: FiHeart },
     { to: "/inventario", label: "Inventario", icon: FiDownload },
+    { to: "/billetera", label: "Billetera", icon: Wallet },
   ];
 
   return (

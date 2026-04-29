@@ -4,6 +4,7 @@ import Home from './views/Home';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import ProductDetailView from './components/ui/ProductDetailView';
+import ScrollToTop from './components/layout/ScrollToTop';
 // Views
 import EditProfileView from './views/EditProfileView';
 import OrdersView from './views/OrdersView';
@@ -12,6 +13,8 @@ import StoreView from './views/StoreView';
 import DownloadsView from './views/DownloadsView';
 import SuccessView from './views/SuccessView';
 import WishlistView from './views/WishlistView';
+import CoinsView from './views/CoinsView';
+
 // Admin
 import AdminLayout from './views/admin/AdminLayout';
 import AdminDashboard from './views/admin/AdminDashboard';
@@ -51,7 +54,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-soft-snow font-sans flex flex-col">
       {!isAdmin && <Navbar />}
-
+      <ScrollToTop />
       <main className="w-full flex-grow">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -63,6 +66,7 @@ function AppContent() {
           <Route path="/inventario" element={<DownloadsView />} />
           <Route path="/success" element={<SuccessView />} />
           <Route path="/favoritos" element={<WishlistView />} />
+          <Route path="/billetera" element={<CoinsView />} />
           
           {/* Tools */}
           <Route path="/tools" element={<ToolsCatalog />} />
