@@ -15,6 +15,7 @@ const navItems = [
   { path: '/admin/noticias', label: 'Noticias', icon: FiRadio },
   { path: '/admin/ordenes', label: 'Órdenes', icon: FiShoppingBag },
   { path: '/admin/reseñas', label: 'Reseñas', icon: FiStar },
+  { path: '/admin/soporte', label: 'Soporte', icon: FiShield },
 ];
 
 export default function AdminLayout() {

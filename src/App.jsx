@@ -24,6 +24,7 @@ import AdminUsers from './views/admin/AdminUsers';
 import AdminOrders from './views/admin/AdminOrders';
 import AdminReviews from './views/admin/AdminReviews';
 import AdminCategories from './views/admin/AdminCategories';
+import AdminSupport from './views/admin/AdminSupport';
 
 // Tools
 import ToolsCatalog from './views/tools/ToolsCatalog';
@@ -46,6 +47,7 @@ import TextToBinary from './views/tools/TextToBinary';
 import TableGenerator from './views/tools/TableGenerator';
 import DateCalculator from './views/tools/DateCalculator';
 import OpenGraphPreview from './views/tools/OpenGraphPreview';
+import SupportView from './views/SupportView';
 
 function AppContent() {
   const location = useLocation();
@@ -67,6 +69,7 @@ function AppContent() {
           <Route path="/success" element={<SuccessView />} />
           <Route path="/favoritos" element={<WishlistView />} />
           <Route path="/billetera" element={<CoinsView />} />
+          <Route path="/soporte" element={<SupportView />} />
           
           {/* Tools */}
           <Route path="/tools" element={<ToolsCatalog />} />
@@ -89,6 +92,7 @@ function AppContent() {
           <Route path="/tools/table-generator" element={<TableGenerator />} />
           <Route path="/tools/date-calculator" element={<DateCalculator />} />
           <Route path="/tools/og-preview"     element={<OpenGraphPreview />} />
+          
 
           {/* Admin */}
           <Route path="/admin" element={<AdminLayout />}>
@@ -99,6 +103,7 @@ function AppContent() {
             <Route path="ordenes" element={<AdminOrders />} />
             <Route path="reseñas" element={<AdminReviews />} />
             <Route path="categorias" element={<AdminCategories />} />
+            <Route path="soporte" element={<AdminSupport />} />
           </Route>
           
         </Routes>
