@@ -1,73 +1,32 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { FiSearch, FiShoppingCart, FiUser, FiX, FiLogOut, FiSettings, FiDownload, FiHeart, FiZap } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { supabase } from "../../supabaseClient";
+import { Link, useLocation } from 'react-router-dom';
 import AuthModal from '../auth/AuthModal';
 import CartSidebar from '../cart/CartSidebar';
 import { useCart } from '../../context/CartContext';
+import { useNavbarLogic } from '../../hooks/useNavbarLogic';
 
 const NAV_LINKS = [
-  { to: '/',       label: 'Home'  },
+  { to: '/',     label: 'Home'  },
   { to: '/tienda', label: 'Store' },
   { to: '/tools',  label: 'Tools' },
 ];
 
 export default function Navbar() {
+  const {
+    user, profile, isSearchOpen, setIsSearchOpen,
+    searchQuery, setSearchQuery, searchResults, setSearchResults,
+    isMenuOpen, setIsMenuOpen, handleSearch, handleLogout
+  } = useNavbarLogic();
+
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [profile, setProfile] = useState(null);
-  const [user, setUser] = useState(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const { cartCount } = useCart();
-  const navigate = useNavigate();
   const location = useLocation();
 
-  // Lógica de Autenticación y Perfil
-  useEffect(() => {
-    const getProfile = async (userId) => {
-      const { data } = await supabase.from('profiles').select('avatar_url, username, balance').eq('id', userId).single();
-      setProfile(data);
-    };
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) getProfile(session.user.id);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) getProfile(session.user.id);
-      else setProfile(null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // FUNCIÓN DE BÚSQUEDA
-  const handleSearch = async (e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-
-    if (value.trim().length > 1) {
-      const { data, error } = await supabase.from('products').select('id, name, price, image_url').ilike('name', `%${value}%`).limit(5);
-      if (!error) setSearchResults(data);
-    } else {
-      setSearchResults([]);
-    }
-  };
-
-  // FUNCIÓN DE CERRAR SESIÓN
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setIsMenuOpen(false);
-  };
-
-  // FUNCIÓN PARA CERRAR MENÚ AL HACER CLIC FUERA
+  // Cerrar menú al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -76,99 +35,58 @@ export default function Navbar() {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [setIsMenuOpen]);
 
   return (
     <>
-      <nav className="fixed top-0 w-full z-50 bg-studio-surface border-b border-studio-border h-20">
-        <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+      <nav className="fixed top-0 w-full z-50 bg-studio-surface border-b border-studio-border h-16 md:h-20">
+        <div className="max-w-7xl mx-auto px-2 md:px-6 h-full flex items-center justify-between gap-1 md:gap-4">
           
           {/* --- LOGO --- */}
-          <Link to="/" className="flex items-center gap-2 group shrink-0">
-            <div className="flex flex-col items-center leading-none">
-              <span className="text-4xl font-black text-studio-text-title tracking-tighter uppercase">
-                A<span className="text-studio-primary">&</span>B
-              </span>
-              <span className="text-xs font-bold text-studio-text-title tracking-[0.4em] uppercase ml-1">Studio</span>
-            </div>
+          <Link to="/" className="flex flex-col items-start leading-none shrink-0 pl-1 md:pl-0">
+            <span className="text-lg md:text-4xl font-black text-studio-text-title tracking-tighter uppercase">
+              A<span className="text-studio-primary">&</span>B
+            </span>
+            <span className="text-[7px] md:text-xs font-bold text-studio-text-title tracking-[0.3em] md:tracking-[0.4em] uppercase">Studio</span>
           </Link>
 
           {/* --- CENTRO: NAV LINKS o BUSCADOR --- */}
-          <div className="flex-1 flex justify-center px-10 relative">
+          <div className="flex-1 flex justify-center relative min-w-0 px-1">
             <AnimatePresence mode="wait">
-
-              {/* BUSCADOR */}
-              {isSearchOpen && (
-                <div className="w-full max-w-lg relative">
-                  <motion.div 
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="flex items-center bg-studio-surface border border-studio-border rounded-xl px-5 py-2.5 shadow-flat"
-                  >
-                    <FiSearch className="text-studio-primary mr-3 shrink-0" />
+              {isSearchOpen ? (
+                <motion.div 
+                  key="search-input"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  className="w-full max-w-lg relative"
+                >
+                  <div className="flex items-center bg-studio-bg border border-studio-border rounded-xl px-2 md:px-5 py-1.5 md:py-2.5">
+                    <FiSearch className="text-studio-primary mr-2 shrink-0" size={16} />
                     <input 
                       autoFocus
                       type="text"
-                      placeholder="Buscar apps, packs..."
+                      placeholder="Buscar..."
                       value={searchQuery}
                       onChange={handleSearch}
-                      className="w-full bg-transparent outline-none font-bold text-studio-text-title placeholder:text-studio-secondary/40 text-sm"
+                      className="w-full bg-transparent outline-none font-bold text-studio-text-title placeholder:text-studio-secondary/40 text-[10px] md:text-sm"
                     />
                     <button 
                       onClick={() => { setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); }}
-                      className="p-1 hover:bg-studio-bg rounded-lg transition-colors text-studio-secondary"
+                      className="p-1 hover:bg-white rounded-lg transition-colors text-studio-secondary"
                     >
-                      <FiX size={18} />
+                      <FiX size={16} />
                     </button>
-                  </motion.div>
-
-                  {/* RESULTADOS DESPLEGABLES */}
-                  <AnimatePresence>
-                    {searchResults.length > 0 && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 5 }}
-                        className="absolute top-full left-0 w-full mt-2 bg-studio-surface rounded-xl shadow-flat border border-studio-border overflow-hidden py-2 z-50"
-                      >
-                        {searchResults.map(result => (
-                          <Link
-                            key={result.id}
-                            to={`/producto/${result.id}`}
-                            onClick={() => { setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); }}
-                            className="flex items-center gap-4 px-6 py-3 hover:bg-studio-primary/10 transition-colors duration-300 group"
-                          >
-                            <img 
-                              src={result.image_url} 
-                              className="w-10 h-10 rounded-lg object-cover border border-studio-border" 
-                              alt={result.name} 
-                            />
-                            <div className="flex-1">
-                              <p className="text-xs font-bold text-studio-text-title group-hover:text-studio-primary transition-colors duration-300">
-                                {result.name}
-                              </p>
-                              <p className="text-[10px] font-black text-studio-primary uppercase">
-                                ${result.price}
-                              </p>
-                            </div>
-                          </Link>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )}
-
-              {/* NAV LINKS — se ocultan cuando el buscador está abierto */}
-              {!isSearchOpen && (
+                  </div>
+                  <SearchResults results={searchResults} onClose={() => { setIsSearchOpen(false); setSearchQuery(""); setSearchResults([]); }} />
+                </motion.div>
+              ) : (
                 <motion.div
                   key="nav-links"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-0.5 md:gap-1"
                 >
                   {NAV_LINKS.map(({ to, label }) => {
                     const isActive = location.pathname === to;
@@ -176,9 +94,9 @@ export default function Navbar() {
                       <Link
                         key={to}
                         to={to}
-                        className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-200
+                        className={`px-2.5 md:px-5 py-1.5 md:py-2 rounded-xl text-[9px] md:text-xs font-black uppercase tracking-widest transition-all duration-200
                           ${isActive
-                            ? 'bg-studio-primary/10 text-studio-primary'
+                            ? 'bg-studio-primary text-white shadow-sm'
                             : 'text-studio-secondary/60 hover:text-studio-text-title hover:bg-studio-bg'
                           }`}
                       >
@@ -188,119 +106,134 @@ export default function Navbar() {
                   })}
                 </motion.div>
               )}
-
             </AnimatePresence>
           </div>
 
           {/* --- ICONOS DERECHA --- */}
-          <div className="flex gap-4 items-center shrink-0">
-            {/* BUSCADOR (Solo si no está abierto) */}
+          <div className="flex gap-1 md:gap-4 items-center shrink-0 pr-1 md:pr-0">
             {!isSearchOpen && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+              <button 
                 onClick={() => setIsSearchOpen(true)}
-                className="p-2.5 hover:bg-studio-bg rounded-xl transition-colors cursor-pointer text-studio-text-title"
+                className="p-1.5 md:p-2.5 hover:bg-studio-bg rounded-xl transition-colors text-studio-text-title"
               >
-                <FiSearch size={22} />
-              </motion.div>
+                <FiSearch size={18} md:size={22} />
+              </button>
             )}
             
-            {/* CARRITO */}
             <div 
               onClick={() => setIsCartOpen(true)} 
-              className="relative p-2.5 hover:bg-studio-bg rounded-xl cursor-pointer text-studio-text-title"
+              className="relative p-1.5 md:p-2.5 hover:bg-studio-bg rounded-xl cursor-pointer text-studio-text-title"
             >
-              <FiShoppingCart size={22} />
+              <FiShoppingCart size={18} md:size={22} />
               {cartCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] bg-studio-primary text-white text-[10px] flex items-center justify-center rounded-full font-bold px-1">
+                <span className="absolute top-1 right-1 min-w-[14px] h-[14px] md:min-w-[18px] md:h-[18px] bg-studio-primary text-white text-[7px] md:text-[10px] flex items-center justify-center rounded-full font-bold px-1">
                   {cartCount}
                 </span>
               )}
             </div>
-            
-            
 
-            {/* BOTÓN USUARIO (LOGGED OUT) */}
             {!user ? (
               <button 
                 onClick={() => setIsAuthOpen(true)} 
-                className="w-10 h-10 rounded-xl bg-studio-bg border border-studio-border text-studio-text-title flex items-center justify-center hover:bg-studio-primary/10 hover:text-studio-primary hover:border-studio-primary/30 transition-all"
+                className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-studio-bg border border-studio-border text-studio-text-title flex items-center justify-center hover:bg-studio-primary/10 transition-all"
               >
-                <FiUser size={20} />
+                <FiUser size={18} />
               </button>
             ) : (
-              /* BOTÓN USUARIO (LOGGED IN) */
               <div className="relative" ref={menuRef}>
                 <button 
                   onClick={() => setIsMenuOpen(!isMenuOpen)} 
-                  className="w-10 h-10 rounded-xl bg-studio-surface border-2 border-studio-border hover:border-studio-primary transition-all flex items-center justify-center overflow-hidden"
+                  className="w-8 h-8 md:w-10 md:h-10 rounded-xl border-2 border-studio-border hover:border-studio-primary transition-all flex items-center justify-center overflow-hidden bg-studio-surface"
                 >
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
                   ) : (
-                    <div className="w-full h-full bg-studio-primary text-white flex items-center justify-center font-bold text-sm">
+                    <div className="w-full h-full bg-studio-primary text-white flex items-center justify-center font-bold text-[10px] md:text-sm">
                       {user.email[0].toUpperCase()}
                     </div>
                   )}
                 </button>
-
-                {/* MENÚ DESPLEGABLE */}
-                <AnimatePresence>
-                  {isMenuOpen && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }} 
-                      animate={{ opacity: 1, y: 0 }} 
-                      exit={{ opacity: 0, y: 10 }} 
-                      className="absolute right-0 mt-3 w-52 bg-studio-surface rounded-xl shadow-flat border border-studio-border py-2 z-50"
-                    >
-                      {/* HEADER DEL MENÚ: Balance visual rápido */}
-                      <div className="px-4 py-3 mb-2 border-b border-studio-border bg-studio-bg/30">
-                        <p className="text-[8px] font-black text-studio-secondary uppercase tracking-[0.2em]">Billetera Actual</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <FiZap className="text-studio-primary" size={14} />
-                          <span className="text-sm font-black text-studio-text-title tracking-tighter">
-                            {profile?.balance || 0} <span className="text-studio-primary">A&BCoins</span>
-                          </span>
-                        </div>
-                      </div>
-                      {[
-                        { to: "/cuenta",     icon: <FiSettings />,     label: "Mi Cuenta"  },
-                        { to: "/pedidos",    icon: <FiShoppingCart />, label: "Pedidos"    },
-                        { to: "/favoritos",  icon: <FiHeart />,        label: "Favoritos"  },
-                        { to: "/inventario", icon: <FiDownload />,     label: "Inventario" },
-                      ].map((item) => (
-                        <Link 
-                          key={item.to}
-                          to={item.to} 
-                          onClick={() => setIsMenuOpen(false)} 
-                          className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-studio-text-body hover:bg-studio-primary/10 hover:text-studio-primary transition-all"
-                        >
-                          <span className="text-lg">{item.icon}</span>
-                          {item.label}
-                        </Link>
-                      ))}
-
-                      <button 
-                        onClick={handleLogout} 
-                        className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-50 border-t border-studio-border transition-colors mt-1"
-                      >
-                        <FiLogOut className="text-lg" /> Cerrar Sesión
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <UserDropdown isOpen={isMenuOpen} profile={profile} onLogout={handleLogout} onClose={() => setIsMenuOpen(false)} />
               </div>
             )}
-
-            
           </div>
-
         </div>
       </nav>
       
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
     </>
+  );
+}
+
+// --- SUB-COMPONENTES ---
+
+function SearchResults({ results, onClose }) {
+  if (results.length === 0) return null;
+  return (
+    <div className="absolute top-full left-0 w-[280px] md:w-full mt-2 bg-studio-surface rounded-xl shadow-2xl border border-studio-border overflow-hidden py-2 z-50">
+      {results.map(result => (
+        <Link
+          key={result.id}
+          to={`/producto/${result.id}`}
+          onClick={onClose}
+          className="flex items-center gap-3 px-4 py-2.5 hover:bg-studio-primary/10 transition-colors group"
+        >
+          <img src={result.image_url} className="w-8 h-8 rounded-lg object-cover border border-studio-border" alt={result.name} />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-bold text-studio-text-title truncate group-hover:text-studio-primary transition-colors">
+              {result.name}
+            </p>
+            <p className="text-[8px] font-black text-studio-primary uppercase tracking-tighter">
+              ${result.price}
+            </p>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function UserDropdown({ isOpen, profile, onLogout, onClose }) {
+  if (!isOpen) return null;
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, y: 10 }} 
+      className="absolute right-0 mt-3 w-48 md:w-52 bg-studio-surface rounded-xl shadow-2xl border border-studio-border py-2 z-50"
+    >
+      <div className="px-4 py-3 mb-2 border-b border-studio-border bg-studio-bg/30">
+        <p className="text-[7px] font-black text-studio-secondary uppercase tracking-[0.2em]">Balance</p>
+        <div className="flex items-center gap-1.5 mt-1">
+          <FiZap className="text-studio-primary" size={12} />
+          <span className="text-xs font-black text-studio-text-title tracking-tighter">
+            {profile?.balance || 0} <span className="text-studio-primary uppercase text-[8px] not-italic">Coins</span>
+          </span>
+        </div>
+      </div>
+      {[
+        { to: "/cuenta",     icon: <FiSettings />,  label: "Mi Cuenta"  },
+        { to: "/pedidos",    icon: <FiShoppingCart />, label: "Pedidos"    },
+        { to: "/favoritos",  icon: <FiHeart />,        label: "Favoritos"  },
+        { to: "/inventario", icon: <FiDownload />,     label: "Inventario" },
+      ].map((item) => (
+        <Link 
+          key={item.to}
+          to={item.to} 
+          onClick={onClose} 
+          className="flex items-center gap-2.5 px-4 py-2.5 text-[10px] font-bold text-studio-text-body hover:bg-studio-primary/10 hover:text-studio-primary transition-all"
+        >
+          <span className="text-base">{item.icon}</span>
+          {item.label}
+        </Link>
+      ))}
+      <button 
+        onClick={onLogout} 
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[10px] font-black text-red-500 hover:bg-red-50 border-t border-studio-border transition-colors mt-1"
+      >
+        <FiLogOut className="text-base" /> Cerrar Sesión
+      </button>
+    </motion.div>
   );
 }

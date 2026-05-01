@@ -1,7 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
-import { FiX, FiMail, FiLock, FiUser} from 'react-icons/fi';
-import { FcGoogle } from 'react-icons/fc';
+import { FiX, FiMail, FiLock, FiUser } from 'react-icons/fi';
 import { supabase } from '../../supabaseClient';
 
 export default function AuthModal({ isOpen, onClose }) {
@@ -29,32 +28,29 @@ export default function AuthModal({ isOpen, onClose }) {
     setLoading(false);
   };
 
-  const handleSocialLogin = async (provider) => {
-    const { error } = await supabase.auth.signInWithOAuth({ provider });
-    if (error) alert(error.message);
-  };
-
   return (
     <AnimatePresence>
       {isOpen && (
         <>
+          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-studio-text-title/40 backdrop-blur-sm z-[100] cursor-pointer"
+            className="fixed inset-0 bg-studio-text-title/60 backdrop-blur-sm z-[100] cursor-pointer"
           />
 
+          {/* Modal Container */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="fixed inset-0 m-auto w-full max-w-[400px] h-fit bg-studio-surface rounded-xl shadow-flat z-[101] overflow-hidden border border-studio-border"
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="fixed inset-0 m-auto w-[92%] md:w-full md:max-w-[400px] h-fit bg-studio-surface rounded-[2.5rem] shadow-2xl z-[101] overflow-hidden border border-studio-border"
           >
             {/* Header del Modal */}
             <div className="p-6 pb-0 flex justify-between items-center">
-              <div className="flex flex-col items-center leading-none">
+              <div className="flex flex-col items-start leading-none">
                 <span className="text-2xl font-black text-studio-text-title tracking-tighter uppercase">
                   A<span className="text-studio-primary">&</span>B
                 </span>
@@ -63,83 +59,76 @@ export default function AuthModal({ isOpen, onClose }) {
                 </span>
               </div>
               
-              <button onClick={onClose} className="p-2 hover:bg-studio-bg rounded-lg transition-colors text-studio-secondary">
+              <button onClick={onClose} className="p-2 hover:bg-studio-bg rounded-xl transition-colors text-studio-secondary">
                 <FiX size={20} />
               </button>
             </div>
 
             <div className="p-8 space-y-6">
-              <div className="text-center space-y-1">
-                <h2 className="text-2xl font-bold text-studio-text-title">
+              {/* TÍTULO CENTRADO */}
+              <div className="space-y-1 text-center">
+                <h2 className="text-3xl font-black text-studio-text-title uppercase italic tracking-tighter">
                   {isLogin ? 'Bienvenido' : 'Crea tu cuenta'}
                 </h2>
-                <p className="text-sm text-studio-text-body font-medium">
-                  {isLogin ? 'Accede a tus recursos digitales.' : 'Únete a nuestra comunidad creativa.'}
+                <p className="text-[10px] font-bold text-studio-secondary uppercase tracking-[0.2em] opacity-60">
+                  {isLogin ? 'Accede a tus recursos' : 'Únete a la comunidad'}
                 </p>
-              </div>
-
-              <button
-                onClick={() => handleSocialLogin('google')}
-                className="w-full flex items-center justify-center gap-3 py-3 border border-studio-border rounded-lg hover:bg-studio-bg transition-all font-bold text-sm text-studio-text-title"
-              >
-                <FcGoogle size={20} /> Google
-              </button>
-
-              <div className="relative flex items-center justify-center uppercase">
-                <div className="absolute w-full border-t border-studio-border"></div>
-                <span className="relative bg-studio-surface px-4 text-[10px] text-studio-secondary font-bold tracking-widest">o con email</span>
               </div>
 
               <form className="space-y-4" onSubmit={handleAuth}>
                 {!isLogin && (
                   <div className="relative">
-                    <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-secondary" />
+                    <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-primary" />
                     <input 
                       type="text" required value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder="Nombre completo" 
-                      className="w-full pl-12 pr-4 py-3 bg-studio-bg border border-transparent rounded-lg outline-none focus:border-studio-primary focus:bg-studio-surface transition-all font-medium text-sm text-studio-text-title"
+                      className="w-full pl-12 pr-4 py-4 bg-studio-bg border border-transparent rounded-2xl outline-none focus:border-studio-primary focus:bg-studio-surface transition-all font-bold text-xs text-studio-text-title"
                     />
                   </div>
                 )}
+                
                 <div className="relative">
-                  <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-secondary" />
+                  <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-primary" />
                   <input 
                     type="email" required value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Tu email" 
-                    className="w-full pl-12 pr-4 py-3 bg-studio-bg border border-transparent rounded-lg outline-none focus:border-studio-primary focus:bg-studio-surface transition-all font-medium text-sm text-studio-text-title"
+                    placeholder="Email de acceso" 
+                    className="w-full pl-12 pr-4 py-4 bg-studio-bg border border-transparent rounded-2xl outline-none focus:border-studio-primary focus:bg-studio-surface transition-all font-bold text-xs text-studio-text-title"
                   />
                 </div>
+
                 <div className="relative">
-                  <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-secondary" />
+                  <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-studio-primary" />
                   <input 
                     type="password" required value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Contraseña" 
-                    className="w-full pl-12 pr-4 py-3 bg-studio-bg border border-transparent rounded-lg outline-none focus:border-studio-primary focus:bg-studio-surface transition-all font-medium text-sm text-studio-text-title"
+                    className="w-full pl-12 pr-4 py-4 bg-studio-bg border border-transparent rounded-2xl outline-none focus:border-studio-primary focus:bg-studio-surface transition-all font-bold text-xs text-studio-text-title"
                   />
                 </div>
 
                 <button 
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-studio-primary text-white font-bold py-3.5 rounded-lg shadow-sm hover:opacity-90 transition-all disabled:opacity-50"
+                  className="w-full bg-studio-text-title text-white font-black py-5 rounded-2xl shadow-lg hover:bg-studio-primary transition-all disabled:opacity-50 text-[11px] uppercase tracking-[0.2em] mt-2 active:scale-95"
                 >
-                  {loading ? 'Procesando...' : (isLogin ? 'Iniciar Sesión' : 'Registrarse')}
+                  {loading ? 'Procesando...' : (isLogin ? 'Entrar al Estudio' : 'Empezar ahora')}
                 </button>
               </form>
 
-              <p className="text-center text-sm font-bold text-studio-text-body">
-                {isLogin ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '}
-                <button 
-                  type="button"
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-studio-primary hover:underline"
-                >
-                  {isLogin ? 'Crea una aquí' : 'Inicia sesión'}
-                </button>
-              </p>
+              <div className="pt-2 text-center">
+                <p className="text-[10px] font-black text-studio-secondary uppercase tracking-widest">
+                  {isLogin ? '¿Nuevo por aquí?' : '¿Ya eres miembro?'}
+                  <button 
+                    type="button"
+                    onClick={() => setIsLogin(!isLogin)}
+                    className="ml-2 text-studio-primary hover:underline transition-all font-black"
+                  >
+                    {isLogin ? 'Regístrate' : 'Inicia sesión'}
+                  </button>
+                </p>
+              </div>
             </div>
           </motion.div>
         </>
