@@ -1,108 +1,28 @@
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiPlus, FiHeart, FiPackage, FiZap, FiCheckCircle, FiCheck } from 'react-icons/fi'; 
+import { FiPlus, FiHeart, FiPackage, FiZap, FiCheckCircle } from 'react-icons/fi'; 
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
-import { supabase } from '../../supabaseClient';
 import CoinPurchaseModal from '../modals/CoinPurchaseModal';
+import { useProductCardLogic } from '../../hooks/useProductCardLogic';
 
 export default function ProductCard({ product }) {
-  const { addToCart, cart } = useCart();
   const navigate = useNavigate();
+  const { addToCart, cart } = useCart();
   
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [hasPurchased, setHasPurchased] = useState(false);
-  const [showCoinModal, setShowCoinModal] = useState(false);
-  const [isPurchasing, setIsPurchasing] = useState(false);
-
-  const isDownloadable = product.product_types?.name?.toLowerCase().includes('descargable');
-  const isInCart = cart.some(item => item.id === product.id);
-
-  // Lógica de los 4 casos de precio
-  const hasUSD = product.price > 0;
-  const hasCoins = product.price_coins > 0;
-  const isFree = product.price === 0 && (!product.price_coins || product.price_coins === 0);
-
-  useEffect(() => {
-    async function initProduct() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: fav } = await supabase
-        .from('wishlist')
-        .select('*')
-        .eq('product_id', product.id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (fav) setIsFavorite(true);
-
-      if (isDownloadable) {
-        const { data: order } = await supabase
-          .from('order_items')
-          .select('id, orders!inner(status)')
-          .eq('product_id', product.id)
-          .eq('orders.user_id', user.id)
-          .eq('orders.status', 'completed')
-          .maybeSingle();
-        
-        if (order) setHasPurchased(true);
-      }
-    }
-    initProduct();
-  }, [product.id, isDownloadable]);
-
-  async function toggleFavorite(e) {
-    e.preventDefault();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return alert("Inicia sesión para guardar favoritos");
-
-    if (isFavorite) {
-      await supabase.from('wishlist').delete().eq('product_id', product.id).eq('user_id', user.id);
-    } else {
-      await supabase.from('wishlist').insert({ product_id: product.id, user_id: user.id });
-    }
-    setIsFavorite(!isFavorite);
-  }
-
-  // Función de compra rápida con monedas
-  const handleCoinPurchase = async () => {
-    setIsPurchasing(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      alert("Inicia sesión para comprar con monedas");
-      setIsPurchasing(false);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase.rpc('process_coin_purchase', {
-        p_product_id: product.id,
-        p_user_id: user.id
-      });
-
-      if (error || !data.success) throw new Error(data?.message || "Error en la compra");
-
-      setHasPurchased(true);
-      setShowCoinModal(false);
-      navigate('/inventario');
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setIsPurchasing(false);
-    }
-  };
+  const {
+    isFavorite, hasPurchased, showCoinModal, setShowCoinModal, isPurchasing,
+    isInCart, isDownloadable, isFree, hasUSD, hasCoins,
+    toggleFavorite, handleCoinPurchase
+  } = useProductCardLogic(product, cart, navigate);
 
   const renderPriceBadge = () => {
-    if (isFree) return <span className="text-sm font-black uppercase tracking-widest italic">FREE</span>;
-    
+    if (isFree) return <span className="text-[8px] md:text-sm font-black uppercase italic tracking-tighter">FREE</span>;
     return (
-      <div className="flex flex-col items-center leading-none gap-1">
-        {hasUSD && <span className="text-sm font-black">${product.price}</span>}
+      <div className="flex flex-col items-center leading-none gap-0.5">
+        {hasUSD && <span className="text-[10px] md:text-sm font-black">${product.price}</span>}
         {hasCoins && (
-          <span className={`font-black flex items-center gap-1 ${hasUSD ? 'text-[9px] opacity-80 border-t border-white/20 mt-1 pt-1' : 'text-sm'}`}>
-            <FiZap size={hasUSD ? 9 : 14} fill="currentColor" /> {product.price_coins}
+          <span className={`font-black flex items-center gap-0.5 ${hasUSD ? 'text-[6px] md:text-[8px] opacity-60 border-t border-white/20 mt-1 pt-1' : 'text-[10px] md:text-sm'}`}>
+            <FiZap size={hasUSD ? 6 : 10} fill="currentColor" /> {product.price_coins}
           </span>
         )}
       </div>
@@ -112,85 +32,88 @@ export default function ProductCard({ product }) {
   return (
     <>
       <motion.div 
-        whileHover={{ y: -8 }}
-        className="group bg-white rounded-[2.5rem] p-4 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col h-full relative"
+        whileHover={{ y: -5 }}
+        className="group bg-white rounded-[1.5rem] md:rounded-[2.5rem] p-2 md:p-4 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col h-full relative overflow-hidden"
       >
-        <div className="relative aspect-square rounded-[2rem] overflow-hidden bg-studio-bg mb-6 border border-gray-50">
+        {/* --- CONTENEDOR DE IMAGEN --- */}
+        <div className="relative aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden bg-studio-bg mb-2 md:mb-5 border border-gray-50">
           <Link to={`/producto/${product.id}`} className="block w-full h-full">
             <img 
               src={product.image_url} 
               alt={product.name} 
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 cursor-pointer" 
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
             />
           </Link>
 
           {!hasPurchased && (
             <div className="absolute top-0 right-0 z-20">
-              <div className="bg-gradient-to-br from-studio-primary to-studio-text-title text-white px-5 py-2.5 rounded-bl-[1.5rem] shadow-md flex flex-col items-center">
+              <div className="bg-gradient-to-br from-studio-primary/90 to-studio-text-title text-white px-3 md:px-5 py-1.5 md:py-2.5 rounded-bl-[1.2rem] md:rounded-bl-[1.5rem] shadow-md flex flex-col items-center backdrop-blur-sm">
                 {renderPriceBadge()}
               </div>
               
-              <div className="flex justify-end p-3">
+              <div className="flex justify-end p-2 md:p-3">
                 <button 
                   onClick={toggleFavorite}
-                  style={{ backgroundColor: isFavorite ? '#ef4444' : 'rgba(255,255,255,0.9)' }}
-                  className="p-2.5 rounded-full shadow-lg transition-all active:scale-90 flex items-center justify-center z-30"
+                  className={`p-1.5 md:p-2.5 rounded-full shadow-lg transition-all active:scale-90 flex items-center justify-center z-30 ${isFavorite ? 'bg-red-500' : 'bg-white/90'}`}
                 >
-                  <FiHeart size={16} style={{ color: isFavorite ? 'white' : '#9ca3af', fill: isFavorite ? 'white' : 'none' }} />
+                  <FiHeart size={12} className={`${isFavorite ? 'text-white fill-white' : 'text-gray-400'}`} />
                 </button>
               </div>
             </div>
           )}
-
-          <div className="absolute bottom-5 right-6 opacity-20 pointer-events-none select-none italic font-black text-xl text-studio-text-title scale-75 origin-bottom-right">
-            A<span className="text-studio-primary">&</span>B <span className="text-[8px] uppercase tracking-[0.3em] font-bold not-italic">Studio</span>
-          </div>
         </div>
 
-        <div className="px-3 pb-4 flex flex-col flex-1">
-          <span className="text-[9px] font-black text-studio-primary uppercase tracking-widest mb-2 flex items-center gap-1">
-            <FiZap size={10} /> {product.product_types?.name}
+        {/* --- DETALLES --- */}
+        <div className="px-1 md:px-2 pb-1 md:pb-2 flex flex-col flex-1">
+          <span className="text-[7px] md:text-[9px] font-black text-studio-primary uppercase tracking-[0.2em] mb-1 flex items-center gap-1 opacity-70">
+            <FiZap size={8} /> {product.product_types?.name}
           </span>
-          <h3 className="text-lg font-bold text-studio-text-title leading-tight mb-6 line-clamp-2">{product.name}</h3>
+          <h3 className="text-[10px] md:text-sm font-bold text-studio-text-title leading-tight mb-4 md:mb-6 line-clamp-2 uppercase tracking-tight">
+            {product.name}
+          </h3>
 
-          <div className="mt-auto flex flex-col gap-3">
+          <div className="mt-auto space-y-1.5 md:space-y-2">
             {hasPurchased ? (
-              <Link to="/inventario" className="w-full bg-studio-text-title text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
-                <FiPackage /> Ver Inventario
+              <Link to="/inventario" className="w-full bg-studio-text-title text-white font-black py-2.5 md:py-4 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-studio-primary transition-all">
+                <FiPackage size={12} /> Inventario
               </Link>
             ) : (
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2">
-                  <Link to={`/producto/${product.id}`} className="flex-[2] bg-studio-bg text-studio-text-title font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest flex items-center justify-center">
+              <>
+                {/* FILA 1: DETALLES + CARRITO (Si hay USD) */}
+                <div className="flex gap-1.5 md:gap-2">
+                  <Link 
+                    to={`/producto/${product.id}`} 
+                    className={`bg-studio-bg text-studio-text-title font-black py-2.5 md:py-4 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] uppercase tracking-widest flex items-center justify-center transition-all hover:bg-studio-border 
+                      ${(hasUSD || isFree) ? 'flex-[2.5]' : 'w-full'}`}
+                  >
                     Detalles
                   </Link>
                   
-                  {/* Carrito (Solo si hay precio USD o es 0/0) */}
                   {(hasUSD || isFree) && (
                     <button 
                       onClick={() => addToCart(product)} 
                       disabled={isDownloadable && isInCart}
-                      className={`flex-1 py-4 rounded-2xl flex items-center justify-center transition-all ${
+                      className={`flex-1 py-2.5 md:py-4 rounded-xl md:rounded-2xl flex items-center justify-center transition-all ${
                         isDownloadable && isInCart 
                         ? 'bg-gray-100 text-studio-secondary/40 cursor-not-allowed' 
                         : 'bg-studio-text-title text-white hover:bg-studio-primary active:scale-95 shadow-md'
                       }`}
                     >
-                      {isDownloadable && isInCart ? <FiCheckCircle size={22} /> : <FiPlus size={22} />}
+                      {isDownloadable && isInCart ? <FiCheckCircle size={16} /> : <FiPlus size={16} />}
                     </button>
                   )}
                 </div>
 
-                {/* Botón de Monedas (Solo si tiene precio_coins > 0) */}
+                {/* FILA 2: CANJEAR COINS (Si hay Coins) */}
                 {hasCoins && (
                   <button 
                     onClick={() => setShowCoinModal(true)}
-                    className="w-full border-2 border-studio-primary/20 text-studio-primary font-black py-3 rounded-2xl text-[9px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-studio-primary hover:text-white transition-all shadow-sm"
+                    className="w-full border-2 border-studio-primary/20 text-studio-primary font-black py-2 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[9px] uppercase tracking-[0.1em] flex items-center justify-center gap-1.5 hover:bg-studio-primary hover:text-white transition-all shadow-sm group/coin"
                   >
-                    <FiZap fill="currentColor" size={12} /> Canjear {product.price_coins} Coins
+                    <FiZap className="group-hover/coin:fill-white" size={10} /> CANJEAR {product.price_coins} COINS
                   </button>
                 )}
-              </div>
+              </>
             )}
           </div>
         </div>
