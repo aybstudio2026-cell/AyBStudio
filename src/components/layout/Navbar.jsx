@@ -201,17 +201,19 @@ function UserDropdown({ isOpen, profile, onLogout, onClose }) {
       initial={{ opacity: 0, y: 10 }} 
       animate={{ opacity: 1, y: 0 }} 
       exit={{ opacity: 0, y: 10 }} 
-      className="absolute right-0 mt-3 w-48 md:w-52 bg-studio-surface rounded-xl shadow-2xl border border-studio-border py-2 z-50"
+      className="absolute right-0 mt-3 w-48 md:w-56 bg-studio-surface rounded-xl shadow-2xl border border-studio-border py-2 z-50"
     >
       <div className="px-4 py-3 mb-2 border-b border-studio-border bg-studio-bg/30">
-        <p className="text-[7px] font-black text-studio-secondary uppercase tracking-[0.2em]">Balance</p>
+        {/* Tamaño ajustado para el label de Balance */}
+        <p className="text-[7px] md:text-[9px] font-black text-studio-secondary uppercase tracking-[0.2em]">Balance</p>
         <div className="flex items-center gap-1.5 mt-1">
-          <FiZap className="text-studio-primary" size={12} />
-          <span className="text-xs font-black text-studio-text-title tracking-tighter">
-            {profile?.balance || 0} <span className="text-studio-primary uppercase text-[8px] not-italic">Coins</span>
+          <FiZap className="text-studio-primary" size={12} md:size={14} />
+          <span className="text-xs md:text-sm font-black text-studio-text-title tracking-tighter">
+            {profile?.balance || 0} <span className="text-studio-primary uppercase text-[8px] md:text-[10px] not-italic">Coins</span>
           </span>
         </div>
       </div>
+
       {[
         { to: "/cuenta",     icon: <FiSettings />,  label: "Mi Cuenta"  },
         { to: "/pedidos",    icon: <FiShoppingCart />, label: "Pedidos"    },
@@ -222,17 +224,20 @@ function UserDropdown({ isOpen, profile, onLogout, onClose }) {
           key={item.to}
           to={item.to} 
           onClick={onClose} 
-          className="flex items-center gap-2.5 px-4 py-2.5 text-[10px] font-bold text-studio-text-body hover:bg-studio-primary/10 hover:text-studio-primary transition-all"
+          // Se cambió text-[10px] a text-[10px] md:text-sm
+          className="flex items-center gap-2.5 px-4 py-2.5 text-[10px] md:text-sm font-bold text-studio-text-body hover:bg-studio-primary/10 hover:text-studio-primary transition-all"
         >
-          <span className="text-base">{item.icon}</span>
+          <span className="text-base md:text-lg">{item.icon}</span>
           {item.label}
         </Link>
       ))}
+
       <button 
         onClick={onLogout} 
-        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[10px] font-black text-red-500 hover:bg-red-50 border-t border-studio-border transition-colors mt-1"
+        // Se cambió text-[10px] a text-[10px] md:text-sm
+        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[10px] md:text-sm font-black text-red-500 hover:bg-red-50 border-t border-studio-border transition-colors mt-1"
       >
-        <FiLogOut className="text-base" /> Cerrar Sesión
+        <FiLogOut className="text-base md:text-lg" /> Cerrar Sesión
       </button>
     </motion.div>
   );
