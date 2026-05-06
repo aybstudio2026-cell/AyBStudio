@@ -9,7 +9,7 @@ import { useNavbarLogic } from '../../hooks/useNavbarLogic';
 
 const NAV_LINKS = [
   { to: '/',     label: 'Home'  },
-  { to: '/tienda', label: 'Store' },
+  { to: '/store', label: 'Store' },
   { to: '/tools',  label: 'Tools' },
 ];
 

@@ -48,6 +48,8 @@ import TableGenerator from './views/tools/TableGenerator';
 import DateCalculator from './views/tools/DateCalculator';
 import OpenGraphPreview from './views/tools/OpenGraphPreview';
 import SupportView from './views/SupportView';
+import TermsAndConditionsView from './views/TermsAndConditionsView';
+import PrivacyPolicyView from './views/PrivacyPolicyView';
 
 function AppContent() {
   const location = useLocation();
@@ -64,12 +66,14 @@ function AppContent() {
           <Route path="/pedidos" element={<OrdersView />} />
           <Route path="/producto/:id" element={<ProductDetailView />} />
           <Route path="/checkout" element={<CheckoutView />} />
-          <Route path="/tienda" element={<StoreView />} />
+          <Route path="/store" element={<StoreView />} />
           <Route path="/inventario" element={<DownloadsView />} />
           <Route path="/success" element={<SuccessView />} />
           <Route path="/favoritos" element={<WishlistView />} />
           <Route path="/billetera" element={<CoinsView />} />
-          <Route path="/soporte" element={<SupportView />} />
+          <Route path="/support" element={<SupportView />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditionsView />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyView />} />
           
           {/* Tools */}
           <Route path="/tools" element={<ToolsCatalog />} />

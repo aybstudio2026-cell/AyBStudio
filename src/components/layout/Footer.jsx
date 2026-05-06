@@ -72,14 +72,16 @@ export default function Footer() {
         <div className="flex flex-row justify-between items-center gap-2">
           <nav>
             <ul className="flex flex-row gap-3 md:gap-8 text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-white/40">
-              <li><Link to="/" className="hover:text-white transition-colors">Inicio</Link></li>
-              <li><Link to="/tienda" className="hover:text-white transition-colors">Tienda</Link></li>
+              <li><Link to="/" className="hover:text-white transition-colors">Home</Link></li>
+              <li><Link to="/store" className="hover:text-white transition-colors">Store</Link></li>
               <li><Link to="/tools" className="hover:text-white transition-colors">Tools</Link></li>
-              <li className="hidden xs:block"><Link to="/soporte" className="hover:text-white transition-colors">Soporte</Link></li>
+              <li><Link to="/terms-and-conditions" className="hover:text-white transition-colors">T&C</Link></li>
+              <li><Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li className="hidden xs:block"><Link to="/support" className="hover:text-white transition-colors">Support</Link></li>
             </ul>
           </nav>
           <p className="text-[8px] md:text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] md:tracking-[0.3em] whitespace-nowrap">
-            © 2026 A&B Studio.
+            © 2026 A&B Studio
           </p>
         </div>
 

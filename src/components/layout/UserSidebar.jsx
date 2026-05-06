@@ -9,7 +9,7 @@ export default function UserSidebar() {
     { to: "/favoritos", label: "Favoritos", icon: FiHeart },
     { to: "/inventario", label: "Inventario", icon: FiDownload },
     { to: "/billetera", label: "Billetera", icon: Wallet },
-    { to: "/soporte", label: "Soporte", icon: FiHelpCircle },
+    { to: "/support", label: "Soporte", icon: FiHelpCircle },
   ];
 
   return (
