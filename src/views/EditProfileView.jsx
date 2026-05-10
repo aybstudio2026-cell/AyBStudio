@@ -122,17 +122,17 @@ export default function EditProfileView() {
 
 
   return (
-    <div className="pt-32 pb-20 min-h-screen bg-studio-bg flex justify-center items-start">
-      <div className="w-full max-w-7xl px-6 md:px-10 flex flex-col md:flex-row gap-10 items-start">
+    <div className="pt-24 pb-24 md:pt-32 md:pb-20 min-h-screen bg-studio-bg flex justify-center items-start">
+      <div className="w-full max-w-7xl px-4 md:px-10 flex flex-col md:flex-row gap-0 md:gap-10 items-start">
         
         {/* --- SIDEBAR--- */}
         <UserSidebar />
 
         {/* --- CONTENIDO PRINCIPAL --- */}
-        <main className="flex-1 bg-studio-surface rounded-xl p-8 md:p-10 border border-studio-border shadow-flat">
+        <main className="flex-1 bg-studio-surface rounded-xl p-5 md:p-10 border border-studio-border shadow-flat">
           
           <div className="mb-10 border-b border-studio-border pb-8">
-            <h1 className="text-2xl font-bold text-studio-text-title uppercase tracking-tight flex items-center gap-3">
+            <h1 className="text-lg md:text-2xl font-bold text-studio-text-title uppercase tracking-tight flex items-center gap-3">
               <div className="p-2.5 bg-studio-primary/10 rounded-lg text-studio-primary">
                 <FiEdit3 size={20} />
               </div>
@@ -176,7 +176,7 @@ export default function EditProfileView() {
             </div>
             
             {/* Grid de Formulario */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6 md:gap-y-8">
               <div className="space-y-2.5">
                 <label className="text-[11px] font-bold text-studio-text-body uppercase tracking-[0.15em] ml-1">Username</label>
                 <div className="relative">

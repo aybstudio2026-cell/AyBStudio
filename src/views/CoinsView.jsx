@@ -26,46 +26,45 @@ export default function CoinsView() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
       setUser(session.user);
-      
-      // 1. Traer balance del perfil
-      const { data: prof } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
       setProfile(prof);
-      
-      // 2. Traer Canjes (Ingresos)
+
       const { data: income } = await supabase
         .from('vouchers')
         .select('id, code, amount, used_at')
         .eq('used_by', session.user.id);
 
-      // 3. Traer Compras con Coins (Gastos)
-      // Buscamos en order_items los productos comprados con monedas
       const { data: expenses } = await supabase
         .from('order_items')
         .select(`
-          id, 
-          coins_at_purchase, 
+          id,
+          coins_at_purchase,
           products ( name ),
           orders!inner ( created_at, user_id )
         `)
         .eq('orders.user_id', session.user.id)
         .gt('coins_at_purchase', 0);
 
-      // 4. Unificar y ordenar movimientos por fecha
       const movements = [
         ...(income || []).map(i => ({
           id: i.id,
           type: 'income',
           label: `Canje: ${i.code}`,
           amount: i.amount,
-          date: i.used_at
+          date: i.used_at,
         })),
         ...(expenses || []).map(e => ({
           id: e.id,
           type: 'expense',
           label: `Compra: ${e.products?.name || 'Producto'}`,
           amount: e.coins_at_purchase,
-          date: e.orders.created_at
-        }))
+          date: e.orders.created_at,
+        })),
       ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
       setHistory(movements);
@@ -79,7 +78,7 @@ export default function CoinsView() {
 
     const { data, error } = await supabase.rpc('redeem_voucher', {
       p_code: code.trim(),
-      p_user_id: user.id
+      p_user_id: user.id,
     });
 
     if (error || !data.success) {
@@ -87,20 +86,22 @@ export default function CoinsView() {
     } else {
       showToast('success', 'Voucher canjeado', `Has sumado ${data.amount} A&BCoins`);
       setCode('');
-      fetchData(); 
+      fetchData();
     }
     setLoading(false);
   };
 
   return (
-    <div className="pt-32 pb-20 min-h-screen bg-studio-bg flex justify-center items-start">
+    <div className="pt-24 pb-24 md:pt-32 md:pb-20 min-h-screen bg-studio-bg flex justify-center items-start">
+
+      {/* Toast — bottom en mobile para no chocar con la bottom nav */}
       <AnimatePresence>
         {toast.show && (
           <motion.div
-            initial={{ opacity: 0, y: -20, x: 20 }}
-            animate={{ opacity: 1, y: 0, x: 0 }}
-            exit={{ opacity: 0, x: 20, transition: { duration: 0.2 } }}
-            className="fixed top-24 right-6 z-[200] w-full max-w-[340px] bg-white rounded-xl shadow-2xl border border-gray-100 flex items-center overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
+            className="fixed bottom-28 left-4 right-4 md:bottom-auto md:top-24 md:right-6 md:left-auto z-[200] md:w-full md:max-w-[340px] bg-white rounded-xl shadow-2xl border border-gray-100 flex items-center overflow-hidden"
           >
             <div className={`w-1.5 h-16 shrink-0 ${toast.type === 'error' ? 'bg-red-500' : 'bg-studio-primary'}`} />
             <div className="flex items-center gap-3 p-4 flex-1">
@@ -122,20 +123,23 @@ export default function CoinsView() {
         )}
       </AnimatePresence>
 
-      <div className="w-full max-w-7xl px-4 md:px-10 flex flex-col md:flex-row gap-10 items-start">
-        
+      <div className="w-full max-w-7xl px-4 md:px-10 flex flex-col md:flex-row gap-0 md:gap-10 items-start">
+
         <UserSidebar />
 
-        <main className="flex-1 space-y-8">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <div className="lg:col-span-1 bg-studio-text-title text-white p-8 rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[220px]">
-              <FiZap className="absolute -right-6 -bottom-6 text-white/10 rotate-12" size={160} />
+        <main className="flex-1 space-y-5 md:space-y-8">
+
+          {/* Fila superior: Balance + Voucher */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+            {/* Card Balance */}
+            <div className="lg:col-span-1 bg-studio-text-title text-white p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[160px] md:min-h-[220px]">
+              <FiZap className="absolute -right-6 -bottom-6 text-white/10 rotate-12" size={130} />
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 mb-1">Tu Crédito</p>
-                <h2 className="text-4xl text-studio-bg font-black italic tracking-tighter">
-                  {profile?.balance || 0} <span className="text-studio-primary not-italic uppercase text-xl">A&BCoins</span>
+                <h2 className="text-3xl md:text-4xl text-studio-bg font-black italic tracking-tighter">
+                  {profile?.balance || 0}{' '}
+                  <span className="text-studio-primary not-italic uppercase text-lg md:text-xl">A&BCoins</span>
                 </h2>
               </div>
               <div className="relative z-10">
@@ -145,9 +149,10 @@ export default function CoinsView() {
               </div>
             </div>
 
-            <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-center">
-              <div className="mb-6">
-                <h3 className="text-lg font-bold text-studio-text-title uppercase tracking-tight flex items-center gap-2">
+            {/* Card Voucher */}
+            <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-center">
+              <div className="mb-5 md:mb-6">
+                <h3 className="text-base md:text-lg font-bold text-studio-text-title uppercase tracking-tight flex items-center gap-2">
                   <Wallet className="text-studio-primary" /> Canjear Voucher
                 </h3>
                 <p className="text-[10px] font-bold text-studio-secondary/60 uppercase tracking-widest mt-1">
@@ -156,14 +161,14 @@ export default function CoinsView() {
               </div>
 
               <form onSubmit={handleRedeem} className="flex flex-col sm:flex-row gap-3">
-                <input 
-                  type="text" 
-                  value={code} 
+                <input
+                  type="text"
+                  value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   placeholder="AB-XXXX-XXXX"
                   className="flex-1 bg-studio-bg border border-gray-100 p-4 rounded-xl font-mono text-sm outline-none focus:ring-2 focus:ring-studio-primary/20 focus:border-studio-primary transition-all uppercase"
                 />
-                <button 
+                <button
                   disabled={loading}
                   className="px-8 py-4 bg-studio-primary text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:shadow-lg hover:shadow-studio-primary/30 transition-all disabled:opacity-50 active:scale-95"
                 >
@@ -173,39 +178,47 @@ export default function CoinsView() {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-8 py-6 border-b border-gray-50 bg-gray-50/30 flex justify-between items-center">
+          {/* Historial */}
+          <div className="bg-white rounded-2xl md:rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-5 md:px-8 py-4 md:py-6 border-b border-gray-50 bg-gray-50/30 flex justify-between items-center">
               <h3 className="text-[11px] font-black uppercase tracking-[0.3em] flex items-center gap-2 text-studio-text-title">
                 <FiClock className="text-studio-primary" /> Historial de Billetera
               </h3>
             </div>
-            
+
             <div className="divide-y divide-gray-50">
               {history.length === 0 ? (
-                <div className="p-20 text-center flex flex-col items-center opacity-20">
+                <div className="p-16 md:p-20 text-center flex flex-col items-center opacity-20">
                   <FiZap size={40} />
                   <p className="font-bold uppercase tracking-widest text-[9px] mt-4">Aún no hay movimientos</p>
                 </div>
               ) : (
                 history.map((item) => (
-                  <div key={item.id} className="p-6 flex justify-between items-center hover:bg-studio-bg/40 transition-colors group">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  <div
+                    key={item.id}
+                    className="px-4 md:px-6 py-4 flex justify-between items-center hover:bg-studio-bg/40 transition-colors group"
+                  >
+                    {/* Icono + Label */}
+                    <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                      <div className={`w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center shrink-0 ${
                         item.type === 'income' ? 'bg-green-50 text-green-500' : 'bg-red-50 text-red-500'
                       }`}>
-                        {item.type === 'income' ? <FiTrendingUp size={18} /> : <FiShoppingBag size={18} />}
+                        {item.type === 'income' ? <FiTrendingUp size={16} /> : <FiShoppingBag size={16} />}
                       </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-studio-text-title uppercase">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold text-studio-text-title uppercase truncate">
                           {item.label}
                         </p>
                         <p className="text-[8px] font-black text-studio-secondary/40 uppercase tracking-widest">
-                          {new Date(item.date).toLocaleDateString()} • {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(item.date).toLocaleDateString()} •{' '}
+                          {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`text-xl font-black italic tracking-tighter ${
+
+                    {/* Monto */}
+                    <div className="text-right shrink-0 ml-3">
+                      <p className={`text-lg md:text-xl font-black italic tracking-tighter ${
                         item.type === 'income' ? 'text-green-500' : 'text-red-500'
                       }`}>
                         {item.type === 'income' ? '+' : '-'}{item.amount}

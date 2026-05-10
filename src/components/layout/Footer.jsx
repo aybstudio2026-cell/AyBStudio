@@ -1,9 +1,15 @@
 import { FaYoutube, FaInstagram, FaTiktok } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 export default function Footer() {
+  const { pathname } = useLocation();
+  
+  const accountRoutes = ['/cuenta', '/pedidos', '/favoritos', '/inventario', '/billetera','/support'];
+  const isAccountRoute = accountRoutes.some(route => pathname.startsWith(route));
+
   return (
-    <footer className="bg-studio-text-title text-white pt-8 pb-6 border-t border-studio-border/10">
+    <footer className={`bg-studio-text-title text-white pt-8 pb-6 border-t border-studio-border/10 ${isAccountRoute ? 'hidden md:block' : ''}`}>
       <div className="max-w-7xl mx-auto px-6">
         
         {/* --- GRID PRINCIPAL --- */}

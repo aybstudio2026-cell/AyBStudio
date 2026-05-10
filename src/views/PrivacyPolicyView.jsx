@@ -207,7 +207,6 @@ const PrivacyPolicyView = () => {
             </section>
 
             <div className="pt-6 border-t border-gray-100 space-y-1">
-              {/* ✅ MEJORA 2: Ambas fechas visibles */}
               <p className="text-[10px] font-bold text-studio-secondary uppercase tracking-widest text-center">
                 Fecha de entrada en vigor: 1 de enero de 2026
               </p>

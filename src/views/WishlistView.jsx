@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { FiHeart, FiShoppingBag, FiArrowRight, FiInbox } from 'react-icons/fi';
+import { FiHeart, FiArrowRight, FiInbox } from 'react-icons/fi';
 import ProductCard from '../components/ui/ProductCard';
 import { Link } from 'react-router-dom';
 import UserSidebar from '../components/layout/UserSidebar';
@@ -26,26 +26,26 @@ export default function WishlistView() {
       .select(`
         product_id,
         products (
-          id, name, price, image_url, description, 
+          id, name, price, image_url, description,
           product_types ( name )
         )
       `)
       .eq('user_id', user.id);
 
-    if (data) setFavorites(data.map(item => item.products));
+    if (data) setFavorites(data.map((item) => item.products));
     setLoading(false);
   }
 
   return (
-    <div className="pt-32 pb-20 min-h-screen bg-studio-bg flex justify-center items-start">
-      <div className="w-full max-w-7xl px-4 md:px-10 flex flex-col md:flex-row gap-10 items-start">
-        
+    <div className="pt-24 pb-24 md:pt-32 md:pb-20 min-h-screen bg-studio-bg flex justify-center items-start">
+      <div className="w-full max-w-7xl px-4 md:px-10 flex flex-col md:flex-row gap-0 md:gap-10 items-start">
+
         <UserSidebar />
 
-        <main className="flex-1 bg-white rounded-xl p-8 md:p-12 border border-gray-100 shadow-sm min-h-[600px]">
-          
+        <main className="flex-1 bg-white rounded-xl p-5 md:p-12 border border-gray-100 shadow-sm min-h-[600px]">
+
           <div className="mb-6 border-b border-gray-50 pb-5">
-            <h1 className="text-2xl font-bold text-studio-text-title uppercase tracking-tight flex items-center gap-3">
+            <h1 className="text-xl md:text-2xl font-bold text-studio-text-title uppercase tracking-tight flex items-center gap-3">
               <div className="p-2.5 bg-studio-primary/10 rounded-lg text-studio-primary">
                 <FiHeart size={20} />
               </div>
@@ -56,7 +56,14 @@ export default function WishlistView() {
             </p>
           </div>
 
-          {favorites.length === 0 ? (
+          {loading ? (
+            /* Skeleton loader */
+            <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="rounded-xl bg-studio-bg animate-pulse aspect-[3/4]" />
+              ))}
+            </div>
+          ) : favorites.length === 0 ? (
             <div className="py-20 flex flex-col items-center justify-center text-center">
               <div className="w-20 h-20 bg-studio-bg rounded-2xl flex items-center justify-center mb-6 text-studio-secondary/30">
                 <FiInbox size={40} strokeWidth={1} />
@@ -67,16 +74,17 @@ export default function WishlistView() {
               <p className="text-studio-secondary text-sm mt-2 mb-10 max-w-xs">
                 Explora nuestra tienda y guarda los recursos digitales que necesites para tus proyectos.
               </p>
-              <Link 
-                to="/tienda" 
+              <Link
+                to="/tienda"
                 className="flex items-center gap-3 bg-studio-text-title text-white px-8 py-4 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-studio-primary transition-all shadow-md active:scale-95"
               >
                 Explorar Tienda <FiArrowRight size={14} />
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-              {favorites.map(product => (
+            /* 2 columnas en mobile, 3 en pantallas grandes */
+            <div className="grid grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8">
+              {favorites.map((product) => (
                 <div key={product.id} className="group transition-all">
                   <ProductCard product={product} />
                 </div>
